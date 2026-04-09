@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>双 Agent 演练室 - 芯云</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM 
+       ===================================================== */
+    :root {
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.95);
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+      --amber:        #E8B84B;
+      --amber-tint:   rgba(232, 184, 75, 0.15);
+      --sage:         #4E7E5E;
+      --sage-tint:    rgba(78, 126, 94, 0.12);
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+      --shadow-sm:    0 2px 8px rgba(44,26,14,0.07);
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+      --shadow-lg:    0 16px 48px rgba(44,26,14,0.14);
+      --font-serif:   'Noto Serif SC', 'Songti SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --r-xl: 24px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    /* NAVIGATION */
+    nav {
+      height: 64px;
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-light);
+      z-index: 100;
+    }
+    .nav-left { display: flex; align-items: center; gap: 24px; }
+    .back-btn { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--ink-mid); font-size: 14px; transition: color 0.2s; }
+    .back-btn:hover { color: var(--copper); }
+    .session-title { font-family: var(--font-serif); font-weight: 700; font-size: 16px; padding-left: 24px; border-left: 1px solid var(--border-light); }
+    .nav-right { display: flex; align-items: center; gap: 20px; }
+    .progress-tag { font-family: var(--font-mono); font-size: 12px; padding: 4px 12px; background: var(--bg-deep); border-radius: var(--r-full); color: var(--ink-mid); }
+
+    /* MAIN LAYOUT */
+    .room-layout { flex: 1; display: flex; overflow: hidden; }
+
+    /* Chat Area */
+    .chat-container { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+    #bg-canvas { position: absolute; inset: 0; pointer-events: none; opacity: 0.4; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 40px 60px; display: flex; flex-direction: column; gap: 32px; scroll-behavior: smooth; z-index: 5; }
+
+    .message { max-width: 85%; display: flex; flex-direction: column; position: relative; animation: messageIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes messageIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .msg-label { font-family: var(--font-mono); font-size: 11px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .msg-content { padding: 20px 24px; border-radius: var(--r-lg); font-size: 15px; line-height: 1.8; box-shadow: var(--shadow-sm); }
+
+    .msg-npc { align-self: flex-start; }
+    .msg-npc .msg-label { color: var(--copper); }
+    .msg-npc .msg-content { background: var(--bg-surface); border: 1.5px solid var(--border-light); border-top-left-radius: 4px; color: var(--ink); }
+
+    .msg-user { align-self: flex-end; }
+    .msg-user .msg-label { color: var(--ink-faint); text-align: right; }
+    .msg-user .msg-content { background: var(--ink); color: var(--bg); border-top-right-radius: 4px; }
+
+    .msg-coach { align-self: flex-start; }
+    .msg-coach .msg-label { color: var(--sage); }
+    .msg-coach .msg-content { background: var(--sage-tint); border: 1.5px solid rgba(78, 126, 94, 0.2); border-top-left-radius: 4px; color: var(--ink); }
+
+    .coach-feedback { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+    .feedback-chip { padding: 4px 12px; border-radius: var(--r-full); font-family: var(--font-mono); font-size: 11px; font-weight: 600; background: white; border: 1px solid rgba(78, 126, 94, 0.2); }
+
+    /* Input Bar */
+    .input-bar { padding: 32px 60px 48px; background: linear-gradient(0deg, var(--bg) 60%, transparent 100%); z-index: 10; }
+    .input-wrapper { max-width: 800px; margin: 0 auto; position: relative; display: flex; gap: 16px; align-items: flex-end; }
+    .chat-input { flex: 1; min-height: 56px; max-height: 160px; padding: 16px 24px; background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: var(--r-xl); font-family: var(--font-sans); font-size: 15px; resize: none; outline: none; transition: all 0.2s; box-shadow: var(--shadow-sm); }
+    .chat-input:focus { border-color: var(--copper); box-shadow: 0 8px 32px var(--copper-glow); background: white; }
+    .voice-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--bg-deep); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .voice-btn:hover { background: var(--amber-tint); border-color: var(--copper); }
+    .send-btn { width: 56px; height: 56px; border-radius: 50%; background: var(--ink); color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .send-btn:hover { background: var(--copper); transform: scale(1.05); }
+    .send-btn:disabled { background: var(--ink-ghost); cursor: not-allowed; transform: none; }
+
+    /* Side Panel */
+    .side-panel { width: 340px; background: var(--bg-surface); border-left: 1px solid var(--border-light); padding: 32px; display: flex; flex-direction: column; gap: 40px; z-index: 10; }
+    .side-section-title { font-family: var(--font-serif); font-size: 15px; font-weight: 700; margin-bottom: 20px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    
+    #mini-radar { width: 100%; height: 260px; }
+
+    .current-units { display: flex; flex-direction: column; gap: 12px; }
+    /* 修复知识点列表样式以匹配截图 */
+    .unit-tag { padding: 14px 16px; background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--r-md); font-size: 14px; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s; color: var(--ink-mid); }
+    .unit-tag.active { border-color: var(--copper); background: var(--copper-tint); color: var(--ink); font-weight: 600; }
+    .unit-tag.done { color: var(--ink-ghost); border-color: var(--border-light); }
+    .unit-tag.done::after { content: '✓'; color: var(--sage); font-weight: 700; font-size: 16px; }
+
+    /* Completion Overlay */
+    .overlay { position: fixed; inset: 0; background: var(--bg-overlay); backdrop-filter: blur(12px); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.5s; }
+    .overlay.show { opacity: 1; visibility: visible; }
+    .result-card { background: var(--bg-surface); border-radius: var(--r-xl); padding: 60px; max-width: 600px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); border: 1.5px solid var(--border); transform: scale(0.9); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .overlay.show .result-card { transform: scale(1); }
+    .result-title { font-family: var(--font-serif); font-size: 32px; margin-bottom: 16px; color: var(--ink); }
+    .result-subtitle { color: var(--ink-mid); margin-bottom: 30px; }
+    #large-radar { width: 350px; height: 350px; margin: 0 auto 30px; }
+    .primary-btn { padding: 16px 40px; background: var(--ink); color: var(--bg); border: none; border-radius: var(--r-md); font-family: var(--font-sans); font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .primary-btn:hover { background: var(--copper); transform: translateY(-2px); }
+
+    @media (max-width: 900px) { .side-panel { display: none; } .chat-messages { padding: 24px; } .input-bar { padding: 20px 24px 32px; } }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <div class="nav-left">
+      <a href="4.html" class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        退出存档
+      </a>
+      <span class="session-title">沉浸式情境演练室</span>
+    </div>
+    <div class="nav-right">
+      <div class="progress-tag" id="top-progress">词汇进度：1 / 4</div>
+      <div class="nav-logo-mark" style="width: 28px; height: 28px; background: var(--copper); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px; fill: white;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+    </div>
+  </nav>
+
+  <div class="room-layout">
+    <main class="chat-container">
+      <canvas id="bg-canvas"></canvas>
+
+      <div class="chat-messages" id="chat-messages">
+        </div>
+
+      <div class="input-bar">
+        <div class="input-wrapper">
+          <div class="voice-btn" title="语音输入">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </div>
+          <textarea class="chat-input" id="user-input" placeholder="费曼式输出：结合业务场景用大白话回应..." rows="1"></textarea>
+          <button class="send-btn" id="send-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="side-panel">
+      <section>
+        <h3 class="side-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          实时认知诊断
+        </h3>
+        <div id="mini-radar"></div>
+      </section>
+
+      <section>
+        <h3 class="side-section-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          待攻克知识点
+        </h3>
+        <div class="current-units" id="unit-list">
+          </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="result-card">
+      <div class="modal-icon" style="background: var(--copper-tint); color: var(--copper); width: 80px; height: 80px; font-size: 40px; margin: 0 auto 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">🏆</div>
+      <h2 class="result-title">演练圆满完成！</h2>
+      <p class="result-subtitle">你已经成功在业务场景中内化了全部核心概念</p>
+      <div id="large-radar"></div>
+      <button class="primary-btn" onclick="location.href='6.html'">查看复盘日记 →</button>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================
+       1. 模拟核心剧情与逻辑机 (Mock State Machine)
+       ===================================================== */
+    const mockScenarios = [
+      {
+        concept: '机会成本',
+        npcPrompt: '你好，我是你的业务主管老李。咱们之前放弃了A项目去做B项目，结果现在A项目被竞品做火了，老板很不高兴。你能用「机会成本」给老板解释一下，我们当时的决定其实并没有错吗？',
+        coachFeedback: '干得漂亮！你不仅看到了表面的损失，还能用大白话将 B 项目的隐性收益作为放弃 A 项目的机会成本来解释。如果能补充一下资源有限的前提就更完美了。',
+        scores: [85, 75, 80, 60, 70]
+      },
+      {
+        concept: '沉没成本',
+        npcPrompt: '老李点点头。紧接着他又问：“公司有个投入了50万但进度停滞的项目，运营那边死活不让撤，说是既然花了这么多钱，撤了太可惜。你刚学完「沉没成本」，打算怎么劝他们？”',
+        coachFeedback: '你抓住了“历史成本不参与未来决策”的精髓！解释得非常通透，直接打破了运营团队的心理包袱。',
+        scores: [92, 85, 75, 80, 78]
+      },
+      {
+        concept: '边际成本',
+        npcPrompt: '财务部的小王跑过来说：“如果我们再招一个实习生来处理这些琐事，虽然工资不高，但每多招一个人，管理和沟通压力都会增加。” 如果是你，你会如何用「边际成本」的概念来衡量招人的决策？',
+        coachFeedback: '很好，你准确考虑了新增一个单位（招一个人）带来的额外沟通成本。如果能结合“边际收益”一起做对比衡量，业务视角会更全面。',
+        scores: [88, 82, 85, 75, 85]
+      },
+      {
+        concept: '固定成本',
+        npcPrompt: '最后，老板叹了口气问：“咱们这个月不管接不接单，服务器年费和办公室租金都要照交。在经济学里，这到底属于什么成本？”',
+        coachFeedback: '完美收官！准确指出了不随业务量变化的成本特征，并且结构清晰，恭喜你完全掌握了这组概念！',
+        scores: [95, 90, 88, 85, 92]
+      }
+    ];
+
+    let currentIndex = 0;
+    const totalConcepts = mockScenarios.length;
+    // 用于计算最终雷达图的累加分数
+    let sumScores = [0, 0, 0, 0, 0];
+
+    // DOM 元素
+    const chatMessages = document.getElementById('chat-messages');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const overlay = document.getElementById('overlay');
+    const unitList = document.getElementById('unit-list');
+    const topProgress = document.getElementById('top-progress');
+
+    /* =====================================================
+       2. ECharts 雷达图初始化与更新逻辑
+       ===================================================== */
+    let miniRadar = echarts.init(document.getElementById('mini-radar'));
+    let largeRadar = null; // 延迟初始化
+
+    const radarIndicator = [
+      { name: '活用', max: 100 },
+      { name: '辨析', max: 100 },
+      { name: '关联', max: 100 },
+      { name: '迁移', max: 100 },
+      { name: '结构', max: 100 }
+    ];
+
+    function getRadarOption(dataScores, isLarge = false) {
+      return {
+        radar: {
+          indicator: radarIndicator,
+          radius: isLarge ? '65%' : '60%',
+          splitNumber: 4,
+          axisName: { color: '#6B4C32', fontSize: isLarge ? 14 : 11, fontFamily: 'Noto Serif SC', fontWeight: 'bold' },
+          splitArea: { areaStyle: { color: ['rgba(232,184,75,0.05)', 'rgba(232,184,75,0.1)', 'rgba(232,184,75,0.15)', 'rgba(232,184,75,0.2)'] } },
+          axisLine: { lineStyle: { color: 'rgba(184, 115, 51, 0.2)' } },
+          splitLine: { lineStyle: { color: 'rgba(184, 115, 51, 0.2)' } }
+        },
+        series: [{
+          type: 'radar',
+          data: [{
+            value: dataScores,
+            name: '能力维度',
+            itemStyle: { color: '#B87333' },
+            areaStyle: { color: 'rgba(184, 115, 51, 0.3)' },
+            lineStyle: { width: 2 }
+          }]
+        }]
+      };
+    }
+
+    // 初始化一个全0的迷你雷达图
+    miniRadar.setOption(getRadarOption([0, 0, 0, 0, 0]));
+
+    /* =====================================================
+       3. 核心流转逻辑
+       ===================================================== */
+
+    // 渲染右侧列表状态
+    function renderUnitList() {
+      topProgress.textContent = `词汇进度：${Math.min(currentIndex + 1, totalConcepts)} / ${totalConcepts}`;
+      let html = '';
+      for (let i = 0; i < totalConcepts; i++) {
+        let className = 'unit-tag';
+        if (i < currentIndex) className += ' done';
+        else if (i === currentIndex) className += ' active';
+        html += `<div class="${className}">${mockScenarios[i].concept}</div>`;
+      }
+      unitList.innerHTML = html;
+    }
+
+    // 添加聊天气泡
+    function addMessage(type, label, content, feedbackScores = null) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message msg-${type}`;
+      let html = `<div class="msg-label">${label}</div><div class="msg-content">${content}</div>`;
+      
+      if (feedbackScores) {
+        html += `<div class="coach-feedback">
+                  <span class="feedback-chip">活用 ${feedbackScores[0]}</span>
+                  <span class="feedback-chip">辨析 ${feedbackScores[1]}</span>
+                  <span class="feedback-chip">结构 ${feedbackScores[4]}</span>
+                 </div>`;
+      }
+      msgDiv.innerHTML = html;
+      chatMessages.appendChild(msgDiv);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      setTimeout(() => {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }, 50);
+    }
+
+    // 抛出 NPC 的问题
+    function startTurn() {
+      renderUnitList();
+      if (currentIndex >= totalConcepts) return; // 防御
+      const currentData = mockScenarios[currentIndex];
+      setTimeout(() => {
+        addMessage('npc', `Agent 1 · 业务场景模拟 [${currentData.concept}]`, currentData.npcPrompt);
+      }, 500);
+    }
+
+    // 点击发送按钮处理
+    sendBtn.addEventListener('click', () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+
+      // 禁用输入框防止连点
+      sendBtn.disabled = true;
+      userInput.disabled = true;
+
+      // 1. 渲染用户的回答
+      addMessage('user', 'YOU · 费曼式回答', text);
+      userInput.value = '';
+      userInput.style.height = '56px';
+
+      const currentData = mockScenarios[currentIndex];
+
+      // 2. 模拟延迟 1 秒后，Agent 2 给出诊断
+      setTimeout(() => {
+        addMessage('coach', 'Agent 2 · 认知教练诊断', currentData.coachFeedback, currentData.scores);
+        
+        // 更新迷你雷达图
+        miniRadar.setOption(getRadarOption(currentData.scores));
+        
+        // 累加分数用于计算最后的大雷达图平均分
+        for (let i=0; i<5; i++) sumScores[i] += currentData.scores[i];
+
+        // 3. 准备进入下一题 或 结束
+        currentIndex++;
+        
+        setTimeout(() => {
+          sendBtn.disabled = false;
+          userInput.disabled = false;
+          userInput.focus();
+
+          if (currentIndex < totalConcepts) {
+            startTurn(); // 下一题
+          } else {
+            showCompletion(); // 结束大屏
+          }
+        }, 2000); // 留 2 秒时间给用户看教练的反馈
+
+      }, 1000);
+    });
+
+    // 回车发送支持
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if(!sendBtn.disabled) sendBtn.click();
+      }
+    });
+
+    userInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+    });
+
+    // 最终结算弹窗
+    function showCompletion() {
+      overlay.classList.add('show');
+      // 计算平均分
+      const avgScores = sumScores.map(score => Math.round(score / totalConcepts));
+      
+      // 延迟初始化并渲染大雷达图
+      setTimeout(() => {
+        if (!largeRadar) {
+          largeRadar = echarts.init(document.getElementById('large-radar'));
+        }
+        largeRadar.setOption(getRadarOption(avgScores, true));
+      }, 200);
+    }
+
+    window.addEventListener('resize', () => {
+      miniRadar.resize();
+      if (largeRadar) largeRadar.resize();
+    });
+
+    /* =====================================================
+       4. 背景动画
+       ===================================================== */
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    const WORDS = ['认知内化', '逻辑迁移', '五维雷达', '费曼输出', '场景生成'];
+    let particles = [];
+
+    function initCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      particles = [];
+      for(let i=0; i<15; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          text: WORDS[Math.floor(Math.random()*WORDS.length)],
+          alpha: 0.05 + Math.random() * 0.05,
+          v: 0.2 + Math.random() * 0.3
+        });
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = "600 18px 'Noto Serif SC'";
+      particles.forEach(p => {
+        p.y -= p.v;
+        if(p.y < -20) p.y = canvas.height + 20;
+        ctx.fillStyle = `rgba(184, 115, 51, ${p.alpha})`;
+        ctx.fillText(p.text, p.x, p.y);
+      });
+      requestAnimationFrame(animate);
+    }
+
+    initCanvas(); animate();
+
+    // 页面加载完成后，自动触发第一题
+    window.onload = () => {
+      startTurn();
+    };
+
+  </script>
+</body>
+</html>

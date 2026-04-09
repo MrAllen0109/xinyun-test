@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>沉浸式学习 - 芯云 (3D 弧度完美版)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM
+       ===================================================== */
+    :root {
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.8);
+
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+
+      --amber:        #E8B84B;
+      --amber-tint:   rgba(232, 184, 75, 0.15);
+      --sage:         #4E7E5E;
+      --sage-tint:    rgba(78, 126, 94, 0.12);
+
+      --error:        #C45C4A;
+
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+      --shadow-lg:    0 20px 50px rgba(44,26,14,0.15);
+
+      --font-serif:   'Noto Serif SC', serif;
+      --font-sans:    'Noto Sans SC', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --r-xl: 32px; /* 调大圆角，更柔和 */
+      --r-full: 9999px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .main-container {
+      position: relative;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(16px);
+      flex-shrink: 0;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px; background: none; border: none;
+      color: var(--ink-mid); font-size: 13px; cursor: pointer; transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--copper); }
+
+    .progress-info { display: flex; align-items: center; gap: 12px; }
+    .progress-text { font-family: var(--font-mono); font-size: 12px; color: var(--ink-mid); }
+    .progress-text strong { color: var(--copper); font-weight: 600; }
+    .progress-bar {
+      width: 90px; height: 4px; background: var(--bg-deep); border-radius: var(--r-full); overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--copper), var(--amber));
+      border-radius: var(--r-full); transition: width 0.5s ease;
+    }
+    .exit-btn {
+      padding: 6px 12px; background: transparent; border: 1px solid var(--border);
+      border-radius: var(--r-sm); font-size: 11px; color: var(--ink-faint); cursor: pointer;
+    }
+    .exit-btn:hover { border-color: var(--copper); color: var(--copper); }
+
+    /* =====================================================
+       3D ARC CAROUSEL AREA (内外双层分离架构)
+       ===================================================== */
+    .card-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 40px;
+      perspective: 1500px; /* 增加视距 */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 1. 外层容器：负责滑动、下沉、模糊。不要开启 preserve-3d */
+    .carousel-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      /* 放大尺寸至初版大小 */
+      width: 420px;
+      height: 520px;
+      cursor: pointer;
+      transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center bottom;
+      will-change: transform, filter, opacity;
+    }
+
+    /* 2. 内层容器：专属负责 3D 翻转，不受外层模糊影响 */
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-style: preserve-3d;
+    }
+
+    /* 触发翻转时，只转动内层！ */
+    .carousel-card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    /* 3. 正反面公共样式 */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--r-xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 36px;
+      text-align: center;
+      /* 描边更浅更细，柔化边缘 */
+      border: 1px solid rgba(184, 115, 51, 0.15);
+      background: var(--bg-surface);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      /* 阴影更柔和 */
+      box-shadow: 0 10px 30px rgba(44, 26, 14, 0.06);
+      transition: filter 0.3s ease;
+    }
+
+    /* 场景触发时卡片内容模糊 */
+
+    /* 正面强制定级 */
+    .card-front {
+      z-index: 2;
+      transform: rotateY(0deg);
+    }
+
+    /* 背面定级与色彩区分 */
+    .card-back {
+      z-index: 1;
+      transform: rotateY(180deg);
+      background: #FFFCF8;
+      border-color: rgba(184, 115, 51, 0.1);
+    }
+
+    /* 内部文字排版微调适应大卡片 */
+    .card-term { font-family: var(--font-serif); font-size: 38px; font-weight: 700; color: var(--ink); margin-bottom: 24px; letter-spacing: -0.02em; }
+    .card-anchor { font-size: 16px; color: var(--ink-mid); line-height: 2; }
+    .card-anchor .blank { display: inline-block; width: 60px; height: 15px; background: var(--bg-deep); border-radius: 4px; vertical-align: middle; border-bottom: 2px dashed var(--border); margin: 0 4px; }
+    .flip-hint { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--ink-ghost); font-family: var(--font-mono); animation: float 2s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+    .card-definition { font-size: 15px; color: var(--ink); line-height: 1.85; margin-bottom: 22px; }
+
+    /* Scene Trigger & Bubbles */
+    .scene-trigger { display: inline-flex; align-items: center; gap: 5px; padding: 10px 20px; background: var(--amber-tint); border: 1.5px solid rgba(232, 184, 75, 0.35); border-radius: var(--r-full); font-size: 13px; font-weight: 500; color: var(--copper-dark); cursor: pointer; transition: all 0.3s; z-index: 20; position: relative; }
+    .scene-trigger:hover { background: rgba(232, 184, 75, 0.22); transform: translateY(-2px); }
+    .scene-trigger.active svg { transform: rotate(180deg); }
+    .scene-trigger.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+    .scene-trigger svg { width: 14px; height: 14px; transition: transform 0.3s; }
+
+    .bubble-container { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.35s ease; z-index: 15; }
+    .bubble-container.show { opacity: 1; pointer-events: auto; }
+    .bubble-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to bottom, #FFFCF8 0%, transparent 100%); pointer-events: none; z-index: 5; border-radius: var(--r-xl); }
+
+    /* 1. 气泡关键词变为深黑色，配合白色光晕衬托 */
+    .keyword-bubble { 
+      position: absolute; 
+      padding: 12px 20px; 
+      font-family: var(--font-serif); 
+      font-size: 16px; 
+      font-weight: 700; 
+      color: var(--ink); /* 这里改成了深黑色 */
+      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.8); /* 发光效果改为白色，防止黑字看不清 */
+      cursor: default; 
+      white-space: nowrap; 
+      animation: bubbleFloat 4s ease-in-out infinite; 
+      z-index: 1; 
+    }
+    
+    .keyword-bubble:nth-child(1) { left: 15%; top: 32%; animation-delay: 0s; }
+    .keyword-bubble:nth-child(2) { left: 48%; top: 48%; animation-delay: -1s; }
+    .keyword-bubble:nth-child(3) { left: 18%; top: 62%; animation-delay: -2s; }
+    .keyword-bubble:nth-child(4) { left: 52%; top: 72%; animation-delay: -3s; }
+    @keyframes bubbleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .keyword-bubble:hover { transform: scale(1.08); text-shadow: 0 4px 12px rgba(255, 255, 255, 1); animation-play-state: paused; }
+
+    /* =====================================================
+       3D 弧度极坐标分发类 (配合更大的尺寸微调间距)
+       ===================================================== */
+    .carousel-card.active {
+      z-index: 30;
+      transform: translate(-50%, -50%) rotateZ(0deg) scale(1);
+      opacity: 1;
+      filter: blur(0);
+    }
+    .carousel-card.left-1 {
+      z-index: 20;
+      transform: translate(calc(-50% - 170px), calc(-50% + 40px)) rotateZ(-8deg) scale(0.85);
+      opacity: 0.6;
+      filter: blur(4px);
+    }
+    .carousel-card.left-2 {
+      z-index: 10;
+      transform: translate(calc(-50% - 300px), calc(-50% + 80px)) rotateZ(-15deg) scale(0.75);
+      opacity: 0.25;
+      filter: blur(8px);
+    }
+    .carousel-card.right-1 {
+      z-index: 20;
+      transform: translate(calc(-50% + 170px), calc(-50% + 40px)) rotateZ(8deg) scale(0.85);
+      opacity: 0.6;
+      filter: blur(4px);
+    }
+    .carousel-card.right-2 {
+      z-index: 10;
+      transform: translate(calc(-50% + 300px), calc(-50% + 80px)) rotateZ(15deg) scale(0.75);
+      opacity: 0.25;
+      filter: blur(8px);
+    }
+    .carousel-card.hidden-left {
+      z-index: 0;
+      transform: translate(calc(-50% - 400px), calc(-50% + 120px)) rotateZ(-20deg) scale(0.6);
+      opacity: 0;
+      filter: blur(12px);
+      pointer-events: none;
+    }
+    .carousel-card.hidden-right {
+      z-index: 0;
+      transform: translate(calc(-50% + 400px), calc(-50% + 120px)) rotateZ(20deg) scale(0.6);
+      opacity: 0;
+      filter: blur(12px);
+      pointer-events: none;
+    }
+
+    /* Bottom Actions */
+    .bottom-bar { padding: 14px 28px 22px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+    .ai-hint { padding: 7px 14px; background: var(--amber-tint); border: 1px solid rgba(232, 184, 75, 0.25); border-radius: var(--r-full); font-size: 11px; color: var(--copper-dark); opacity: 0; transform: translateY(5px); transition: all 0.3s; }
+    .ai-hint.show { opacity: 1; transform: translateY(0); }
+    .action-btns { display: flex; justify-content: center; gap: 12px; }
+    .action-btn { padding: 11px 24px; border-radius: var(--r-lg); font-family: var(--font-sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+    .action-btn .icon { font-size: 16px; }
+    .btn-forgot { background: transparent; border: 1.5px solid rgba(196, 92, 74, 0.25); color: var(--error); }
+    .btn-forgot:hover { background: rgba(196, 92, 74, 0.08); transform: translateY(-2px); }
+    .btn-blur { background: transparent; border: 1.5px solid rgba(232, 184, 75, 0.35); color: var(--copper-dark); }
+    .btn-blur:hover { background: var(--amber-tint); transform: translateY(-2px); }
+    .btn-know { background: transparent; border: 1.5px solid rgba(78, 126, 94, 0.25); color: var(--sage); }
+    .btn-know:hover { background: var(--sage-tint); transform: translateY(-2px); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(44, 26, 14, 0.35); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s; }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal-content { background: var(--bg-surface); border-radius: var(--r-xl); padding: 36px; max-width: 360px; width: 90%; text-align: center; box-shadow: var(--shadow-lg); transform: scale(0.92); transition: transform 0.3s; }
+    .modal-overlay.show .modal-content { transform: scale(1); }
+    .modal-icon { width: 50px; height: 50px; background: var(--sage-tint); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; font-size: 26px; }
+    .modal-title { font-family: var(--font-serif); font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+    .modal-desc { font-size: 13px; color: var(--ink-mid); margin-bottom: 24px; line-height: 1.6; }
+    .modal-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 24px; }
+    .stat-item { text-align: center; }
+    .stat-value { font-family: var(--font-serif); font-size: 26px; font-weight: 700; }
+    .stat-value.know { color: var(--sage); }
+    .stat-value.blur { color: var(--copper); }
+    .stat-value.forgot { color: var(--error); }
+    .stat-label { font-size: 10px; color: var(--ink-faint); font-family: var(--font-mono); margin-top: 2px; }
+    .modal-btn { width: 100%; padding: 12px; background: var(--ink); color: var(--bg); border: none; border-radius: var(--r-md); font-family: var(--font-sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .modal-btn:hover { background: var(--copper); transform: translateY(-2px); }
+
+/* =====================================================
+   精准模糊补丁：只模糊文字，气泡保持绝对清晰
+   ===================================================== */
+
+/* 1. 给文字和按钮加过渡，保证平滑 */
+.card-term, 
+.card-definition, 
+.scene-trigger {
+  transition: filter 0.3s ease, opacity 0.3s ease;
+  will-change: filter, opacity;
+}
+
+/* 2. 精准模糊：由于线索移到了正面，现在要模糊正面的元素 */
+.carousel-card.scene-open .card-front .card-term,
+.carousel-card.scene-open .card-front .card-anchor,
+.carousel-card.scene-open .card-front .scene-trigger {
+  filter: blur(5px);
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* 3. 气泡容器强制清晰保持最高层级 */
+.carousel-card.scene-open .bubble-container {
+  filter: blur(0) !important;
+  opacity: 1;
+  z-index: 99;
+}
+  </style>
+</head>
+
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+<div class="main-container">
+
+  <div class="top-bar">
+    <button class="back-btn" onclick="history.back()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      返回工作台
+    </button>
+    <div class="progress-info">
+      <span class="progress-text"><strong id="current-index">1</strong> / <span id="total-count">7</span></span>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <button class="exit-btn" onclick="showModal()">完成学习</button>
+  </div>
+
+  <div class="card-area">
+    <div class="carousel-container" id="carousel-container"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <div class="ai-hint" id="ai-hint">💡 AI 建议：偏模糊（作答耗时 > 12秒）</div>
+    <div class="action-btns">
+      <button class="action-btn btn-forgot" onclick="markCard('forgot')">
+        <span class="icon">😶</span>遗忘
+      </button>
+      <button class="action-btn btn-blur" onclick="markCard('blur')">
+        <span class="icon">🤔</span>模糊
+      </button>
+      <button class="action-btn btn-know" onclick="markCard('know')">
+        <span class="icon">✓</span>认识
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <div class="modal-icon">🎉</div>
+    <h3 class="modal-title">本组复习完成！</h3>
+    <p class="modal-desc" id="modal-desc">已完成学习，点击进入下一阶段</p>
+    <div class="modal-stats">
+      <div class="stat-item"><div class="stat-value know" id="stat-know">3</div><div class="stat-label">认识</div></div>
+      <div class="stat-item"><div class="stat-value blur" id="stat-blur">2</div><div class="stat-label">模糊</div></div>
+      <div class="stat-item"><div class="stat-value forgot" id="stat-forgot">0</div><div class="stat-label">遗忘</div></div>
+    </div>
+    <button class="modal-btn" onclick="goToNextPage()">开始实战演练 →</button>
+  </div>
+</div>
+
+<script>
+/* 背景动画 */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let currentWord = '沉没成本';
+
+class FloatingWord {
+  constructor() { this.reset(); this.life = Math.random() * this.maxLife; this.fadeIn = false; }
+  reset() {
+    const w = canvas.width; const h = canvas.height; const side = Math.random() > 0.5 ? 'left' : 'right';
+    this.x = side === 'left' ? Math.random() * w * 0.3 : w * 0.7 + Math.random() * w * 0.3;
+    this.y = Math.random() * h; this.word = currentWord; this.size = 18 + Math.random() * 22;
+    this.alpha = 0.06 + Math.random() * 0.1; this.vx = (Math.random() - 0.5) * 0.4; this.vy = (Math.random() - 0.5) * 0.3;
+    this.rotation = (Math.random() - 0.5) * 0.2; this.rotationSpeed = (Math.random() - 0.5) * 0.0015;
+    this.life = 0; this.maxLife = 300 + Math.random() * 400; this.fadeIn = true;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy; this.rotation += this.rotationSpeed; this.life++; this.word = currentWord;
+    if (this.fadeIn && this.life < 80) this.currentAlpha = (this.life / 80) * this.alpha;
+    else if (this.life > this.maxLife - 80) this.currentAlpha = ((this.maxLife - this.life) / 80) * this.alpha;
+    else { this.currentAlpha = this.alpha; this.fadeIn = false; }
+    if (this.life >= this.maxLife || this.x < -150 || this.x > canvas.width + 150) this.reset();
+  }
+  draw() {
+    ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation); ctx.font = `600 ${this.size}px 'Noto Serif SC', serif`;
+    ctx.fillStyle = `rgba(184, 115, 51, ${this.currentAlpha})`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(this.word, 0, 0); ctx.restore();
+  }
+}
+let bgParticles = [];
+function initCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; bgParticles = []; for (let i = 0; i < 35; i++) bgParticles.push(new FloatingWord()); }
+function animateBg() { ctx.clearRect(0, 0, canvas.width, canvas.height); bgParticles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animateBg); }
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+initCanvas(); animateBg();
+
+/* 卡片数据 */
+const flashcards = [
+  { id: 1, term: '沉没成本', anchor: '记忆锚点：<span class="blank"></span>的、且与<span class="blank"></span>无关的成本。', definition: '已发生的、且与当前决策无关的成本。<br>启示：不应为沉没成本继续投入资源。', keywords: ['项目亏损', '已有投入', '难以割舍', '继续追加'] },
+  { id: 2, term: '机会成本', anchor: '记忆锚点：做出选择后<span class="blank"></span>的代价。', definition: '做出选择后放弃的最大代价。<br>任何选择都有机会成本。', keywords: ['选择放弃', '最大代价', '权衡取舍', '资源有限'] },
+  { id: 3, term: '边际成本', anchor: '记忆锚点：每增加一单位<span class="blank"></span>所增加的成本。', definition: '每增加一单位产量所增加的成本。<br>决策时只需考虑边际成本与边际收益。', keywords: ['新增产量', '增量成本', '边际决策', '最优规模'] },
+  { id: 4, term: '固定成本', anchor: '记忆锚点：<span class="blank"></span>产量变化的成本。', definition: '不随产量变化的成本。<br>无论生产多少，这部分成本必须支付。', keywords: ['厂房租金', '设备折旧', '固定支出', '规模经济'] },
+  { id: 5, term: '可变成本', anchor: '记忆锚点：<span class="blank"></span>产量变化的成本。', definition: '随产量变化的成本。<br>产量越高，可变成本越大。', keywords: ['原材料', '人工成本', '随产变动', '边际递增'] },
+  { id: 6, term: '边际效用', anchor: '记忆锚点：每增加一单位消费带来的<span class="blank"></span>的增量。', definition: '每增加一单位消费带来的满足感增量。<br>通常呈现递减规律。', keywords: ['满足感', '消费增量', '递减规律', '效用最大化'] },
+  { id: 7, term: '供给弹性', anchor: '记忆锚点：价格变动1%引起<span class="blank"></span>变动的百分比。', definition: '价格变动引起供给量变动的敏感程度。<br>弹性大意味着供给对价格变化反应灵敏。', keywords: ['价格敏感', '供给响应', '生产调整', '市场反应'] }
+];
+
+/* 状态管理 */
+let currentIndex = 0;
+let cards = [...flashcards];
+let isFlipped = false;
+let startTime = Date.now();
+let stats = { know: 0, blur: 0, forgot: 0 };
+let forgotCards = [];
+let sceneVisible = false;
+let isAnimating = false;
+
+const carouselContainer = document.getElementById('carousel-container');
+const currentIndexEl = document.getElementById('current-index');
+const totalCountEl = document.getElementById('total-count');
+const progressFill = document.getElementById('progress-fill');
+const aiHint = document.getElementById('ai-hint');
+const modal = document.getElementById('modal');
+
+/* 重构 DOM 结构：加入 .card-inner 层专门处理 3D 翻转 */
+function initCarouselDOM() {
+  carouselContainer.innerHTML = '';
+  cards.forEach((card, i) => {
+    const cardEl = createCardElement(card, i);
+    carouselContainer.appendChild(cardEl);
+  });
+  renderCarousel();
+}
+
+function createCardElement(card, i) {
+  const cardEl = document.createElement('div');
+  cardEl.className = 'carousel-card hidden-right'; 
+  cardEl.dataset.index = i;
+
+  cardEl.innerHTML = `
+    <div class="card-inner">
+      <div class="card-face card-front">
+        <h2 class="card-term">${card.term}</h2>
+        <p class="card-anchor">${card.anchor}</p>
+        
+        <button class="scene-trigger" data-idx="${i}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          场景线索
+        </button>
+        
+        <div class="bubble-container" data-idx="${i}">
+          ${card.keywords.map(kw => `<div class="keyword-bubble">${kw}</div>`).join('')}
+        </div>
+      </div>
+      
+      <div class="card-face card-back">
+        <h2 class="card-term">${card.term}</h2>
+        <p class="card-definition">${card.definition}</p>
+      </div>
+    </div>
+  `;
+
+  cardEl.addEventListener('click', handleCardClick);
+  const btn = cardEl.querySelector('.scene-trigger');
+  if(btn) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (parseInt(cardEl.dataset.index) === currentIndex) toggleScene(btn);
+    });
+  }
+  return cardEl;
+}
+
+function renderCarousel() {
+  const cardEls = carouselContainer.querySelectorAll('.carousel-card');
+  
+  cardEls.forEach((cardEl) => {
+    const i = parseInt(cardEl.dataset.index);
+    const offset = i - currentIndex;
+    cardEl.dataset.offset = offset;
+
+    let posClass = '';
+    if (offset === 0) posClass = 'active';
+    else if (offset === -1) posClass = 'left-1';
+    else if (offset === -2) posClass = 'left-2';
+    else if (offset === 1) posClass = 'right-1';
+    else if (offset === 2) posClass = 'right-2';
+    else if (offset < -2) posClass = 'hidden-left';
+    else posClass = 'hidden-right';
+
+    const isCardFlipped = (offset === 0 && isFlipped);
+    const isCardSceneOpen = (offset === 0 && sceneVisible);
+
+    cardEl.className = `carousel-card ${posClass} ${isCardFlipped ? 'flipped' : ''} ${isCardSceneOpen ? 'scene-open' : ''}`;
+  });
+
+  if (sceneVisible) {
+    const activeCard = document.querySelector('.carousel-card.active');
+    if (activeCard) {
+      const bubbleContainer = activeCard.querySelector('.bubble-container');
+      if (bubbleContainer) bubbleContainer.classList.add('show');
+      const sceneBtn = activeCard.querySelector('.scene-trigger');
+      if (sceneBtn) sceneBtn.classList.add('active');
+    }
+  } else {
+    document.querySelectorAll('.bubble-container').forEach(b => b.classList.remove('show'));
+    document.querySelectorAll('.scene-trigger').forEach(b => b.classList.remove('active', 'hidden'));
+  }
+
+  updateProgress();
+}
+
+function handleCardClick(e) {
+  if (e.target.closest('.keyword-bubble') || e.target.closest('.scene-trigger') || isAnimating) return;
+  const cardEl = e.currentTarget;
+  const offset = parseInt(cardEl.dataset.offset);
+
+  if (offset !== 0) {
+    isAnimating = true;
+    currentIndex = offset < 0 ? Math.max(0, currentIndex + offset) : Math.min(cards.length - 1, currentIndex + offset);
+    isFlipped = false; sceneVisible = false;
+    renderCarousel();
+    setTimeout(() => { isAnimating = false; startTime = Date.now(); }, 700);
+    return;
+  }
+
+  if (sceneVisible) {
+    sceneVisible = false; renderCarousel(); return;
+  }
+  isFlipped = !isFlipped;
+  renderCarousel();
+}
+
+function toggleScene(btn) {
+  sceneVisible = !sceneVisible;
+  renderCarousel();
+}
+
+function updateProgress() {
+  if (currentIndex < cards.length) currentWord = cards[currentIndex].term;
+  currentIndexEl.textContent = Math.min(currentIndex + 1, cards.length);
+  totalCountEl.textContent = cards.length;
+  progressFill.style.width = `${(Math.min(currentIndex + 1, cards.length) / cards.length) * 100}%`;
+}
+
+function markCard(status) {
+  if (isAnimating) return;
+  isAnimating = true;
+  const elapsed = Date.now() - startTime;
+  stats[status]++;
+
+  if (status === 'know' && elapsed > 12000) {
+    aiHint.textContent = '💡 AI 建议：偏模糊（作答耗时 > 12秒）';
+    aiHint.classList.add('show'); setTimeout(() => aiHint.classList.remove('show'), 2500);
+  } else if (status === 'blur' && elapsed < 3000) {
+    aiHint.textContent = '💡 AI 建议：可能是认识的（作答太快）';
+    aiHint.classList.add('show'); setTimeout(() => aiHint.classList.remove('show'), 2500);
+  } else {
+    aiHint.classList.remove('show');
+  }
+
+  if (status === 'forgot') {
+    forgotCards.push(cards[currentIndex]);
+  }
+
+  currentIndex++;
+
+  if (currentIndex >= cards.length && forgotCards.length > 0) {
+    const currentLen = cards.length;
+    cards = cards.concat(forgotCards);
+    forgotCards.forEach((card, idx) => {
+      const newIdx = currentLen + idx;
+      const cardEl = createCardElement(card, newIdx);
+      carouselContainer.appendChild(cardEl);
+    });
+    forgotCards = [];
+    totalCountEl.textContent = cards.length;
+  }
+
+  if (currentIndex >= cards.length) {
+    renderCarousel();
+    setTimeout(() => { showModal(); isAnimating = false; }, 700);
+  } else {
+    isFlipped = false; sceneVisible = false;
+    renderCarousel();
+    startTime = Date.now();
+    setTimeout(() => { isAnimating = false; }, 700);
+  }
+}
+
+function showModal() {
+  document.getElementById('stat-know').textContent = stats.know;
+  document.getElementById('stat-blur').textContent = stats.blur;
+  document.getElementById('stat-forgot').textContent = stats.forgot;
+  document.getElementById('modal-desc').innerHTML = `已完成 ${cards.length} 张卡片的三态标记<br>点击进入下一阶段`;
+  modal.classList.add('show');
+}
+function goToNextPage() { window.location.href = '5.html'; }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (!sceneVisible && currentIndex < cards.length) { isFlipped = !isFlipped; renderCarousel(); }
+  }
+  if (e.key === 'ArrowLeft' && currentIndex > 0 && !isAnimating) {
+    isAnimating = true; currentIndex--; isFlipped = false; sceneVisible = false;
+    renderCarousel(); setTimeout(() => { isAnimating = false; startTime = Date.now(); }, 700);
+  }
+  if (e.key === 'ArrowRight' && currentIndex < cards.length - 1 && !isAnimating) {
+    isAnimating = true; currentIndex++; isFlipped = false; sceneVisible = false;
+    renderCarousel(); setTimeout(() => { isAnimating = false; startTime = Date.now(); }, 700);
+  }
+  if (e.key === '1') markCard('forgot');
+  if (e.key === '2') markCard('blur');
+  if (e.key === '3') markCard('know');
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', (e) => {
+  if (isAnimating) return;
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 50) {
+    if (diff > 0 && currentIndex > 0) {
+      isAnimating = true; currentIndex--; isFlipped = false; sceneVisible = false;
+      renderCarousel(); setTimeout(() => { isAnimating = false; startTime = Date.now(); }, 700);
+    } else if (diff < 0 && currentIndex < cards.length - 1) {
+      isAnimating = true; currentIndex++; isFlipped = false; sceneVisible = false;
+      renderCarousel(); setTimeout(() => { isAnimating = false; startTime = Date.now(); }, 700);
+    }
+  }
+});
+
+totalCountEl.textContent = cards.length;
+initCarouselDOM();
+startTime = Date.now();
+</script>
+
+</body>
+</html>

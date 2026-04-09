@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - 芯云</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM — 芯云 Warm Scholar Palette
+       ===================================================== */
+    :root {
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.88);
+
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+
+      --amber:        #E8B84B;
+      --amber-tint:   rgba(232, 184, 75, 0.15);
+      --sage:         #4E7E5E;
+      --sage-tint:    rgba(78, 126, 94, 0.12);
+
+      --error:        #C45C4A;
+      --error-tint:   rgba(196, 92, 74, 0.1);
+
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+
+      --shadow-sm:    0 2px 8px rgba(44,26,14,0.07);
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+      --shadow-lg:    0 16px 48px rgba(44,26,14,0.14);
+
+      --font-serif:   'Noto Serif SC', 'Songti SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-xl: 24px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    /* =====================================================
+       LAYOUT
+       ===================================================== */
+    .page-wrapper {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* =====================================================
+       LEFT SIDE - BRANDING (Dynamic Width)
+       ===================================================== */
+    .brand-side {
+      flex: 1.2; /* Slightly more space for branding to balance wider form */
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 80px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    #bg-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .brand-glow {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,184,75,0.08) 0%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .brand-content {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 480px;
+      text-align: left;
+    }
+
+    .brand-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 56px;
+      text-decoration: none;
+    }
+
+    .brand-logo-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--copper) 0%, var(--copper-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px var(--copper-glow);
+    }
+
+    .brand-logo-mark svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    .brand-logo-text {
+      font-family: var(--font-serif);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-tagline {
+      font-family: var(--font-serif);
+      font-size: clamp(40px, 5vw, 56px);
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.2;
+      margin-bottom: 56px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-tagline .em {
+      color: var(--copper);
+      position: relative;
+    }
+
+    .brand-tagline .em::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--copper), var(--amber));
+      border-radius: 2px;
+    }
+
+    .brand-features {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .brand-feature {
+      position: relative;
+      padding-left: 24px;
+    }
+
+    .brand-feature::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--copper);
+      box-shadow: 0 0 10px var(--copper-glow);
+    }
+
+    .feature-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .feature-desc {
+      font-size: 14.5px;
+      color: var(--ink-mid);
+      line-height: 1.6;
+    }
+
+    /* =====================================================
+       RIGHT SIDE - LOGIN FORM (Wider & Refined)
+       ===================================================== */
+    .form-side {
+      flex: 0 0 540px; /* Increased from 480px to make it wider */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-light);
+      position: relative;
+      z-index: 20;
+      box-shadow: -15px 0 40px rgba(44,26,14,0.03);
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 360px; /* Increased from 320px for internal elements */
+    }
+
+    .form-header {
+      margin-bottom: 48px;
+      text-align: left;
+    }
+
+    .form-title {
+      font-family: var(--font-serif);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .form-subtitle {
+      font-size: 15px;
+      color: var(--ink-faint);
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 28px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--ink-mid);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      color: var(--ink);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      outline: none;
+    }
+
+    .form-input::placeholder {
+      color: var(--ink-ghost);
+      font-weight: 400;
+    }
+
+    .form-input:focus {
+      border-color: var(--copper);
+      box-shadow: 0 0 0 4px var(--copper-tint);
+      background: white;
+    }
+
+    .form-input.error {
+      border-color: var(--error);
+      background: var(--error-tint);
+      animation: shake 0.4s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .error-message {
+      display: none;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--error);
+      font-family: var(--font-mono);
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    /* Code Input Group */
+    .code-group {
+      display: flex;
+      gap: 14px;
+    }
+
+    .code-group .form-input {
+      flex: 1;
+    }
+
+    .code-btn {
+      padding: 0 24px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--copper);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .code-btn:hover:not(:disabled) {
+      border-color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .code-btn:disabled {
+      background: var(--bg-deep);
+      color: var(--ink-ghost);
+      cursor: not-allowed;
+      border-color: var(--border-light);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--r-md);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-top: 16px;
+    }
+
+    .submit-btn:hover {
+      background: var(--copper);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px var(--copper-glow);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 40px 0;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border-light);
+    }
+
+    .divider-text {
+      padding: 0 20px;
+      font-size: 12px;
+      color: var(--ink-ghost);
+      font-family: var(--font-mono);
+      letter-spacing: 0.1em;
+    }
+
+    /* Terms */
+    .terms-text {
+      font-size: 12.5px;
+      color: var(--ink-faint);
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    .terms-text a {
+      color: var(--copper);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .terms-text a:hover {
+      color: var(--copper-dark);
+      text-decoration: underline;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1024px) {
+      .form-side { flex: 0 0 460px; padding: 60px 40px; }
+      .brand-side { padding: 60px 40px; }
+    }
+
+    @media (max-width: 900px) {
+      body { overflow-y: auto; }
+      .page-wrapper { flex-direction: column; height: auto; min-height: 100vh; }
+      .brand-side { flex: none; padding: 60px 24px; align-items: flex-start; }
+      .brand-content { max-width: 100%; }
+      .brand-logo { margin-bottom: 32px; }
+      .brand-tagline { font-size: 36px; margin-bottom: 40px; }
+      .form-side { flex: 1; padding: 50px 24px; border-left: none; border-top: 1px solid var(--border-light); align-items: flex-start; }
+      .form-container { max-width: 100%; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page-wrapper">
+
+  <!-- =====================================================
+       LEFT SIDE - BRANDING
+       ===================================================== -->
+  <div class="brand-side">
+    <div class="brand-glow" aria-hidden="true"></div>
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+    <div class="brand-content">
+      <a href="1.html" class="brand-logo">
+        <div class="brand-logo-mark">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <span class="brand-logo-text">芯云</span>
+      </a>
+
+      <h1 class="brand-tagline">
+        知识，<span class="em">活</span>起来
+      </h1>
+
+      <div class="brand-features">
+        <div class="brand-feature">
+          <div class="feature-title">记忆锚点提炼</div>
+          <div class="feature-desc">剥离冗余信息，锁定核心记忆回路。</div>
+        </div>
+        <div class="brand-feature">
+          <div class="feature-title">三态记忆追踪</div>
+          <div class="feature-desc">基于遗忘曲线精准复现，告别无效复习。</div>
+        </div>
+        <div class="brand-feature">
+          <div class="feature-title">双 Agent 陪练</div>
+          <div class="feature-desc">沉浸式模拟实战场景，在对抗中修正认知。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       RIGHT SIDE - LOGIN FORM
+       ===================================================== -->
+  <div class="form-side">
+    <div class="form-container">
+      <div class="form-header">
+        <h2 class="form-title">开启学习之旅</h2>
+        <p class="form-subtitle">进入专属你的演练空间</p>
+      </div>
+
+      <form id="login-form">
+        <!-- Phone Input -->
+        <div class="form-group">
+          <label class="form-label" for="phone">手机号</label>
+          <div class="input-wrapper">
+            <input
+              type="tel"
+              id="phone"
+              class="form-input"
+              placeholder="请输入手机号"
+              maxlength="11"
+              autocomplete="tel"
+            >
+          </div>
+          <p class="error-message" id="phone-error">请输入正确的手机号</p>
+        </div>
+
+        <!-- Verification Code -->
+        <div class="form-group">
+          <label class="form-label" for="code">验证码</label>
+          <div class="code-group">
+            <input
+              type="text"
+              id="code"
+              class="form-input"
+              placeholder="请输入验证码"
+              maxlength="6"
+              autocomplete="one-time-code"
+            >
+            <button type="button" class="code-btn" id="send-code">获取验证码</button>
+          </div>
+          <p class="error-message" id="code-error">验证码错误，请重新输入</p>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="submit-btn" id="submit-btn">登录 / 开启之旅</button>
+
+        <div class="divider">
+          <div class="divider-line"></div>
+          <span class="divider-text">NEW USER</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <p class="terms-text">
+          未注册的手机号验证后自动创建账户<br>
+          登录即代表同意 <a href="#">服务条款</a> 和 <a href="#">隐私政策</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<!-- =====================================================
+     JAVASCRIPT (Canvas & Interactivity)
+     ===================================================== -->
+<script>
+/* ─────────────────────────────────────────────
+   1. CANVAS FLOATING WORDS BACKGROUND
+   ───────────────────────────────────────────── */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+
+const WORDS = [
+  '记忆锚点', '费曼输出', '知识内化', '场景生成', '认知诊断',
+  '工作记忆', '沉没成本', '机会成本', '学习单元', '五维雷达',
+  '深度提炼', '沉浸陪练', '边界辨析', '逻辑迁移', '知识网络'
+];
+
+class FloatingWord {
+  constructor() {
+    this.reset();
+    this.life = Math.random() * this.maxLife;
+    this.fadeIn = false;
+  }
+
+  reset() {
+    const w = canvas.width;
+    const h = canvas.height;
+    this.x = Math.random() * w;
+    this.y = Math.random() * h;
+    this.word = WORDS[Math.floor(Math.random() * WORDS.length)];
+    this.size = 20 + Math.random() * 24;
+    this.alpha = 0.08 + Math.random() * 0.12;
+    this.vx = (Math.random() - 0.5) * 0.35;
+    this.vy = (Math.random() - 0.5) * 0.25;
+    this.rotation = (Math.random() - 0.5) * 0.2;
+    this.rotationSpeed = (Math.random() - 0.5) * 0.0018;
+    this.life = 0;
+    this.maxLife = 350 + Math.random() * 450;
+    this.fadeIn = true;
+  }
+
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.rotation += this.rotationSpeed;
+    this.life++;
+    if (this.fadeIn && this.life < 80) {
+      this.currentAlpha = (this.life / 80) * this.alpha;
+    } else if (this.life > this.maxLife - 80) {
+      this.currentAlpha = ((this.maxLife - this.life) / 80) * this.alpha;
+    } else {
+      this.currentAlpha = this.alpha;
+      this.fadeIn = false;
+    }
+    if (this.life >= this.maxLife || this.x < -150 || this.x > canvas.width + 150) {
+      this.reset();
+    }
+  }
+
+  draw() {
+    ctx.save();
+    ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+    ctx.font = `600 ${this.size}px 'Noto Serif SC', serif`;
+    ctx.fillStyle = `rgba(184, 115, 51, ${this.currentAlpha})`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(this.word, 0, 0); ctx.restore();
+  }
+}
+
+let particles = [];
+const PARTICLE_COUNT = 30;
+
+function initCanvas() {
+  const brandSide = document.querySelector('.brand-side');
+  canvas.width = brandSide.offsetWidth;
+  canvas.height = window.innerHeight;
+  particles = [];
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push(new FloatingWord());
+  }
+}
+
+let animationId;
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  animationId = requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize', () => {
+  const brandSide = document.querySelector('.brand-side');
+  if (brandSide) {
+    canvas.width = brandSide.offsetWidth;
+    canvas.height = window.innerHeight;
+  }
+});
+
+setTimeout(() => { initCanvas(); animate(); }, 100);
+
+/* ─────────────────────────────────────────────
+   2. FORM INTERACTION
+   ───────────────────────────────────────────── */
+const phoneInput = document.getElementById('phone');
+const codeInput = document.getElementById('code');
+const sendCodeBtn = document.getElementById('send-code');
+const submitBtn = document.getElementById('submit-btn');
+
+phoneInput.addEventListener('input', (e) => {
+  const value = e.target.value.replace(/\D/g, '');
+  e.target.value = value;
+  phoneInput.classList.remove('error');
+  document.getElementById('phone-error').classList.remove('show');
+});
+
+sendCodeBtn.addEventListener('click', () => {
+  if (phoneInput.value.length !== 11) {
+    phoneInput.classList.add('error');
+    document.getElementById('phone-error').classList.add('show');
+    return;
+  }
+  let s = 60; sendCodeBtn.disabled = true;
+  sendCodeBtn.textContent = s + 's';
+  const timer = setInterval(() => {
+    s--; if(s <= 0) { clearInterval(timer); sendCodeBtn.disabled = false; sendCodeBtn.textContent = '获取验证码'; }
+    else sendCodeBtn.textContent = s + 's';
+  }, 1000);
+});
+
+codeInput.addEventListener('input', () => {
+  codeInput.value = codeInput.value.replace(/\D/g, '');
+  codeInput.classList.remove('error');
+  document.getElementById('code-error').classList.remove('show');
+});
+
+// Login form submission
+document.getElementById('login-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+
+  // Validate phone
+  if (phoneInput.value.length !== 11) {
+    phoneInput.classList.add('error');
+    document.getElementById('phone-error').classList.add('show');
+    return;
+  }
+
+  // Validate code
+  if (codeInput.value.length < 4) {
+    codeInput.classList.add('error');
+    document.getElementById('code-error').classList.add('show');
+    return;
+  }
+
+  // Show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = '登录中...';
+
+  // Simulate login and redirect to workbench
+  setTimeout(() => {
+    window.location.href = '3.html';
+  }, 800);
+});
+</script>
+
+</body>
+</html>

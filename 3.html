@@ -1,0 +1,2739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识预处理工作台 - 芯云</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM — 芯云 Warm Scholar Palette
+       ===================================================== */
+    :root {
+      /* Backgrounds */
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.88);
+
+      /* Brand Colors */
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+
+      /* Ink */
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+
+      /* Accents */
+      --amber:        #E8B84B;
+      --amber-tint:   rgba(232, 184, 75, 0.15);
+      --sage:         #4E7E5E;
+      --sage-tint:    rgba(78, 126, 94, 0.12);
+      --blue:         #4A7AB8;
+      --blue-tint:    rgba(74, 122, 184, 0.12);
+      --purple:       #8B6BB5;
+      --purple-tint:  rgba(139, 107, 181, 0.12);
+
+      /* Status Colors */
+      --error:        #C45C4A;
+      --error-tint:   rgba(196, 92, 74, 0.1);
+
+      /* Borders */
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+
+      /* Shadows */
+      --shadow-sm:    0 2px 8px rgba(44,26,14,0.07);
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+      --shadow-lg:    0 16px 48px rgba(44,26,14,0.14);
+
+      /* Typography */
+      --font-serif:   'Noto Serif SC', 'Songti SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-display: 'Playfair Display', 'Noto Serif SC', serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+      /* Radius */
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --r-xl: 24px;
+      --r-full: 9999px;
+
+      /* Sidebar */
+      --sidebar-width: 260px;
+    }
+
+    /* =====================================================
+       RESET & BASE
+       ===================================================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    /* =====================================================
+       SIDEBAR
+       ===================================================== */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 64px;
+      bottom: 0;
+      width: var(--sidebar-width);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.collapsed { transform: translateX(-100%); }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .sidebar-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .create-group-btn {
+      width: 100%;
+      padding: 10px 16px;
+      background: var(--bg);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--r-md);
+      color: var(--ink-faint);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .create-group-btn:hover {
+      border-color: var(--copper);
+      color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .group-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .group-item {
+      padding: 14px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .group-item:hover {
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .group-item.active {
+      border-color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .group-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .group-name {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ink);
+    }
+
+    .group-count {
+      font-size: 11px;
+      color: var(--ink-faint);
+      background: var(--bg-deep);
+      padding: 2px 8px;
+      border-radius: var(--r-full);
+      font-family: var(--font-mono);
+    }
+
+    .group-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: none;
+      gap: 4px;
+    }
+
+    .group-item:hover .group-actions { display: flex; }
+
+    .group-action-btn {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: var(--bg-surface);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-faint);
+      transition: all 0.2s;
+    }
+
+    .group-action-btn:hover {
+      background: var(--copper);
+      color: white;
+    }
+
+    .group-action-btn.delete:hover { background: var(--error); }
+
+    /* =====================================================
+       NAVIGATION
+       ===================================================== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .sidebar-toggle {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--r-sm);
+      color: var(--ink-mid);
+      transition: all 0.2s;
+    }
+
+    .sidebar-toggle:hover {
+      background: var(--copper-tint);
+      color: var(--copper);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--copper) 0%, var(--copper-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px var(--copper-glow);
+    }
+
+    .logo-mark svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+
+    .logo-text {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--ink-mid);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--copper); }
+    .nav-links a.active { color: var(--copper); font-weight: 500; }
+
+    .nav-btn {
+      padding: 8px 22px;
+      background: var(--ink);
+      color: var(--bg) !important;
+      border-radius: var(--r-sm);
+      font-weight: 600 !important;
+      font-size: 13.5px !important;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--copper) !important;
+      transform: translateY(-1px);
+    }
+
+    /* =====================================================
+       MAIN CONTENT
+       ===================================================== */
+    main {
+      padding-top: 64px;
+      padding-left: var(--sidebar-width);
+      min-height: 100vh;
+      transition: padding-left 0.3s ease;
+    }
+
+    main.sidebar-collapsed { padding-left: 0; }
+
+    .workbench {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 64px);
+    }
+
+    /* =====================================================
+       INPUT SECTION (Compact)
+       ===================================================== */
+    .input-section {
+      padding: 16px 40px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+      flex-shrink: 0;
+    }
+
+    .input-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .input-title {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .input-modes {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .mode-label {
+      font-size: 12px;
+      color: var(--ink-faint);
+    }
+
+    .mode-options {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mode-option {
+      font-size: 12px;
+      color: var(--ink-ghost);
+      cursor: pointer;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mode-option:hover { color: var(--ink-mid); }
+    .mode-option.active { color: var(--copper); font-weight: 500; }
+
+    .mode-option svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .mode-divider {
+      width: 1px;
+      height: 12px;
+      background: var(--border);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-textarea {
+      width: 100%;
+      height: 90px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--ink);
+      line-height: 1.7;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, height 0.3s ease;
+    }
+
+    .input-textarea.expanded { height: 220px; }
+
+    .input-textarea::placeholder { color: var(--ink-ghost); }
+
+    .input-textarea:focus {
+      border-color: var(--copper);
+      box-shadow: 0 0 0 3px var(--copper-tint);
+    }
+
+    .input-textarea.error {
+      border-color: var(--error);
+      background: var(--error-tint);
+    }
+
+    .expand-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: var(--bg-surface);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-faint);
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .expand-btn:hover {
+      background: var(--copper-tint);
+      color: var(--copper);
+    }
+
+    .expand-btn svg {
+      width: 12px;
+      height: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .expand-btn.expanded svg { transform: rotate(180deg); }
+
+    /* Upload Zone */
+    .upload-zone {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 90px;
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      border-radius: var(--r-lg);
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .upload-zone.visible { display: flex; }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .upload-zone.loading { pointer-events: none; }
+
+    .upload-icon {
+      width: 28px;
+      height: 28px;
+      color: var(--ink-faint);
+      margin-bottom: 6px;
+    }
+
+    .upload-text {
+      font-size: 13px;
+      color: var(--ink-faint);
+    }
+
+    .upload-hint {
+      font-size: 11px;
+      color: var(--ink-ghost);
+      margin-top: 2px;
+    }
+
+    .upload-loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .upload-zone.loading .upload-loading { display: flex; }
+    .upload-zone.loading .upload-icon,
+    .upload-zone.loading .upload-text,
+    .upload-zone.loading .upload-hint { display: none; }
+
+    /* URL Input */
+    .url-input-wrapper {
+      display: none;
+      position: relative;
+    }
+
+    .url-input-wrapper.visible { display: block; }
+
+    .url-input {
+      width: 100%;
+      height: 42px;
+      padding: 10px 14px;
+      padding-right: 90px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-lg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .url-input:focus {
+      border-color: var(--copper);
+      box-shadow: 0 0 0 3px var(--copper-tint);
+    }
+
+    .url-input::placeholder { color: var(--ink-ghost); }
+
+    .url-submit-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 6px 14px;
+      background: var(--copper);
+      border: none;
+      border-radius: var(--r-sm);
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .url-submit-btn:hover { background: var(--copper-dark); }
+
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+
+    .char-count {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--ink-faint);
+    }
+
+    .char-count.error {
+      color: var(--error);
+      font-weight: 500;
+    }
+
+    .extract-btn {
+      padding: 8px 24px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--r-md);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .extract-btn:hover:not(:disabled) {
+      background: var(--copper);
+      transform: translateY(-1px);
+    }
+
+    .extract-btn:disabled {
+      background: var(--ink-ghost);
+      cursor: not-allowed;
+    }
+
+    .extract-btn.loading { pointer-events: none; }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--bg);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    .extract-btn.loading .spinner { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* =====================================================
+       CONTENT SECTION (Split Layout)
+       ===================================================== */
+    .content-section {
+      flex: 1;
+      padding: 16px 40px;
+      background: var(--bg);
+      display: flex;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .content-left {
+      flex: 0 0 30%;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .content-right {
+      flex: 0 0 calc(70% - 16px);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Knowledge Graph Card */
+    .graph-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-lg);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .graph-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .graph-title {
+      font-family: var(--font-serif);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .graph-title svg {
+      width: 14px;
+      height: 14px;
+      color: var(--copper);
+    }
+
+    .graph-body {
+      flex: 1;
+      display: flex;
+      position: relative;
+      min-height: 0;
+    }
+
+    #knowledge-graph {
+      flex: 1;
+      min-height: 180px;
+    }
+
+    .graph-legend {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(252, 247, 238, 0.95);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      padding: 8px 10px;
+      font-size: 10px;
+      box-shadow: var(--shadow-sm);
+      max-width: 120px;
+    }
+
+    .legend-title {
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .legend-title svg {
+      width: 10px;
+      height: 10px;
+      color: var(--ink-faint);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+      color: var(--ink-mid);
+    }
+
+    .legend-item:last-child { margin-bottom: 0; }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Table Card */
+    .table-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-lg);
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .table-title-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-title {
+      font-family: var(--font-serif);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .table-count {
+      font-size: 10px;
+      color: var(--ink-faint);
+      padding: 2px 8px;
+      background: var(--bg-deep);
+      border-radius: var(--r-full);
+      font-family: var(--font-mono);
+    }
+
+    .table-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 5px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 11px;
+      color: var(--ink-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .action-btn:hover {
+      border-color: var(--copper);
+      color: var(--copper);
+    }
+
+    .action-btn.primary {
+      background: var(--copper);
+      border-color: var(--copper);
+      color: white;
+    }
+
+    .action-btn.primary:hover { background: var(--copper-dark); }
+
+    .action-btn.primary:disabled {
+      background: var(--ink-ghost);
+      border-color: var(--ink-ghost);
+      cursor: not-allowed;
+    }
+
+    .action-btn.outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ink-mid);
+    }
+
+    .action-btn.outline:hover:not(:disabled) {
+      border-color: var(--copper);
+      color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .action-btn.outline:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .action-btn svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    .selected-info {
+      font-size: 10px;
+      color: var(--sage);
+      font-weight: 500;
+      padding: 4px 8px;
+      background: var(--sage-tint);
+      border-radius: var(--r-full);
+      display: none;
+    }
+
+    .selected-info.visible {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .table-wrapper {
+      flex: 1;
+      overflow: auto;
+      padding: 10px;
+    }
+
+    /* Unit Grid (Multi Column Layout) */
+    .unit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .unit-card {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .unit-card:hover {
+      border-color: var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .unit-card.selected {
+      border-color: var(--sage);
+      background: var(--sage-tint);
+    }
+
+    .unit-card-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .unit-card-title {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .unit-card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 6px;
+      border-radius: var(--r-full);
+      font-size: 9px;
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .unit-card-status.new {
+      background: var(--sage-tint);
+      color: var(--sage);
+    }
+
+    .unit-card-status.learning {
+      background: var(--amber-tint);
+      color: var(--copper-dark);
+    }
+
+    .unit-card-status.mastered {
+      background: var(--copper-tint);
+      color: var(--copper);
+    }
+
+    .unit-card-status-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .unit-card-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .unit-card:hover .unit-card-actions { opacity: 1; }
+
+    .unit-card-btn {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: var(--bg-surface);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-faint);
+      transition: all 0.2s;
+    }
+
+    .unit-card-btn:hover {
+      background: var(--copper);
+      color: white;
+    }
+
+    .unit-card-btn.delete:hover { background: var(--error); }
+
+    .unit-card-btn svg {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* Custom Checkbox */
+    .checkbox {
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      background: var(--bg-surface);
+      flex-shrink: 0;
+    }
+
+    .checkbox:hover { border-color: var(--copper); }
+
+    .checkbox.checked {
+      background: var(--sage);
+      border-color: var(--sage);
+    }
+
+    .checkbox svg {
+      width: 8px;
+      height: 8px;
+      stroke: white;
+      stroke-width: 3;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .checkbox.checked svg { opacity: 1; }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      min-height: 180px;
+      color: var(--ink-ghost);
+      text-align: center;
+      padding: 30px 20px;
+    }
+
+    .empty-state svg {
+      width: 40px;
+      height: 40px;
+      opacity: 0.25;
+      margin-bottom: 12px;
+    }
+
+    .empty-state h3 {
+      font-family: var(--font-serif);
+      font-size: 14px;
+      color: var(--ink-faint);
+      margin-bottom: 4px;
+    }
+
+    .empty-state p {
+      font-size: 11px;
+      max-width: 220px;
+      line-height: 1.6;
+    }
+
+    /* Loading Skeleton */
+    .skeleton-grid {
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .skeleton-card {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .skeleton-box {
+      background: linear-gradient(90deg, var(--bg-deep) 25%, var(--border-light) 50%, var(--bg-deep) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--r-sm);
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .hidden { display: none !important; }
+
+    /* =====================================================
+       MODALS
+       ===================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(44, 26, 14, 0.5);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: var(--bg-surface);
+      border-radius: var(--r-xl);
+      box-shadow: var(--shadow-lg);
+      max-width: 480px;
+      width: 90%;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalSlideUp 0.3s ease;
+    }
+
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-light);
+      position: relative;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .modal-subtitle {
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-top: 4px;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: var(--bg);
+      cursor: pointer;
+      border-radius: var(--r-md);
+      color: var(--ink-faint);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--error-tint);
+      color: var(--error);
+    }
+
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .group-select-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .group-select-item {
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 2px solid var(--border-light);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .group-select-item:hover { border-color: var(--border); }
+
+    .group-select-item.selected {
+      border-color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    .group-select-radio {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .group-select-item.selected .group-select-radio {
+      border-color: var(--copper);
+    }
+
+    .group-select-radio::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      width: 6px;
+      height: 6px;
+      background: var(--copper);
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .group-select-item.selected .group-select-radio::after {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .group-select-info { flex: 1; }
+
+    .group-select-name {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .group-select-count {
+      font-size: 11px;
+      color: var(--ink-faint);
+    }
+
+    .create-new-group-link {
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .create-new-group-link a {
+      font-size: 12px;
+      color: var(--copper);
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.2s;
+    }
+
+    .create-new-group-link a:hover { color: var(--copper-dark); }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      background: var(--bg);
+    }
+
+    .btn-secondary {
+      padding: 8px 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 12px;
+      color: var(--ink-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--copper);
+      color: var(--copper);
+    }
+
+    .btn-primary {
+      padding: 8px 20px;
+      background: var(--copper);
+      border: none;
+      border-radius: var(--r-md);
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--copper-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      background: var(--ink-ghost);
+      cursor: not-allowed;
+    }
+
+    /* Strategy Modal */
+    .strategy-section { margin-bottom: 20px; }
+
+    .strategy-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .strategy-label svg {
+      width: 14px;
+      height: 14px;
+      color: var(--copper);
+    }
+
+    .strategy-hint {
+      font-size: 11px;
+      color: var(--ink-faint);
+      background: var(--amber-tint);
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      margin-bottom: 12px;
+      border-left: 3px solid var(--amber);
+    }
+
+    .group-size-options {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .size-option {
+      padding: 12px 8px;
+      background: var(--bg);
+      border: 2px solid var(--border-light);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .size-option:hover { border-color: var(--border); }
+
+    .size-option.selected {
+      border-color: var(--sage);
+      background: var(--sage-tint);
+    }
+
+    .size-option.disabled {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .size-number {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 2px;
+    }
+
+    .size-option.selected .size-number { color: var(--sage); }
+
+    .size-label {
+      font-size: 10px;
+      color: var(--ink-faint);
+    }
+
+    .strategy-result {
+      padding: 12px 14px;
+      background: var(--bg-deep);
+      border-radius: var(--r-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .result-text {
+      font-size: 13px;
+      color: var(--ink);
+    }
+
+    .result-text strong {
+      color: var(--sage);
+      font-size: 15px;
+      font-family: var(--font-serif);
+      margin: 0 3px;
+    }
+
+    .result-note {
+      font-size: 11px;
+      color: var(--ink-faint);
+    }
+
+    .group-name-section { margin-top: 16px; }
+
+    .form-group { margin-bottom: 14px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-mid);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 13px;
+      color: var(--ink);
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--copper);
+      box-shadow: 0 0 0 3px var(--copper-tint);
+    }
+
+    .color-options {
+      display: flex;
+      gap: 8px;
+    }
+
+    .color-option {
+      width: 22px;
+      height: 22px;
+      border-radius: var(--r-md);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .color-option:hover { transform: scale(1.15); }
+
+    .color-option.selected {
+      border-color: var(--ink);
+      box-shadow: 0 0 0 2px var(--bg-surface);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 10px 20px;
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: var(--r-md);
+      font-size: 13px;
+      box-shadow: var(--shadow-lg);
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast svg {
+      width: 16px;
+      height: 16px;
+      color: var(--sage);
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1200px) {
+      .content-section {
+        flex-direction: column;
+      }
+
+      .content-left,
+      .content-right {
+        flex: none;
+        width: 100%;
+      }
+
+      .content-left { height: 280px; }
+      .content-right { flex: 1; }
+    }
+
+    @media (max-width: 1100px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      main { padding-left: 0; }
+    }
+
+    @media (max-width: 1200px) {
+      .unit-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links li:not(:last-child) { display: none; }
+
+      .input-section { padding: 14px 20px; }
+      .input-textarea { height: 80px; }
+
+      .content-section { padding: 14px 20px; }
+
+      .modal { width: 95%; }
+      .modal-header, .modal-body, .modal-footer { padding: 16px 20px; }
+
+      .unit-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h3 class="sidebar-title">我的知识库</h3>
+    <button class="create-group-btn" id="create-group-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      创建新分组
+    </button>
+  </div>
+
+  <div class="sidebar-content">
+    <div class="group-list" id="group-list"></div>
+  </div>
+</aside>
+
+<!-- NAVIGATION -->
+<nav>
+  <div class="nav-left">
+    <button class="sidebar-toggle" id="sidebar-toggle">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="12" x2="21" y2="12"></line>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <line x1="3" y1="18" x2="21" y2="18"></line>
+      </svg>
+    </button>
+    <a class="nav-logo" href="1.html">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="logo-text">芯云</div>
+    </a>
+  </div>
+
+  <ul class="nav-links">
+    <li><a href="3.html" class="active">工作台</a></li>
+    <li><a href="6.html">学习记录</a></li>
+    <li><a href="#">个人中心</a></li>
+    <li><a href="4.html" class="nav-btn">开始学习</a></li>
+  </ul>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main id="main-content">
+  <div class="workbench">
+
+    <!-- Input Section -->
+    <section class="input-section">
+      <div class="input-header">
+        <h2 class="input-title">知识预处理工作台</h2>
+      </div>
+
+      <!-- Input Modes (compact labels) -->
+      <div class="input-modes">
+        <span class="mode-label">输入方式：</span>
+        <div class="mode-options">
+          <span class="mode-option active" data-mode="text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            文本输入
+          </span>
+          <span class="mode-divider"></span>
+          <span class="mode-option" data-mode="pdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="12" y1="18" x2="12" y2="12"></line>
+              <line x1="9" y1="15" x2="15" y2="15"></line>
+            </svg>
+            上传PDF
+          </span>
+          <span class="mode-divider"></span>
+          <span class="mode-option" data-mode="url">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            网页链接
+          </span>
+        </div>
+      </div>
+
+      <!-- Text Input -->
+      <div class="input-wrapper text-input-wrapper visible" id="text-input-wrapper">
+        <textarea
+          class="input-textarea"
+          id="source-text"
+          placeholder="在此粘贴学习资料（最多 5000 字）...
+
+例如：经济学概念、专业术语定义、知识点总结等...
+
+AI 将自动提取核心概念，生成「记忆锚点」帮助您高效记忆。"
+          maxlength="5000"
+        ></textarea>
+        <button class="expand-btn" id="expand-btn" title="展开/收起">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- PDF Upload Zone -->
+      <div class="upload-zone" id="upload-zone">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span class="upload-text">点击或拖拽上传 PDF 文件</span>
+        <span class="upload-hint">支持 .pdf 格式，最大 10MB</span>
+        <div class="upload-loading">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20">
+              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <span>正在解析文档...</span>
+        </div>
+        <input type="file" id="file-input" accept=".pdf" style="display: none;">
+      </div>
+
+      <!-- URL Input -->
+      <div class="url-input-wrapper" id="url-input-wrapper">
+        <input type="url" class="url-input" id="url-input" placeholder="输入网页链接，AI 将自动提取内容...">
+        <button class="url-submit-btn" id="url-submit-btn">提取</button>
+      </div>
+
+      <div class="input-footer">
+        <span class="char-count" id="char-count">0 / 5000 字</span>
+        <button class="extract-btn" id="extract-btn">
+          <span class="spinner"></span>
+          <span class="btn-text">开始提炼</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Content Section -->
+    <section class="content-section">
+      <!-- Left: Knowledge Graph -->
+      <div class="content-left">
+        <div class="graph-card">
+          <div class="graph-header">
+            <h3 class="graph-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <circle cx="19" cy="5" r="2"></circle>
+                <circle cx="5" cy="5" r="2"></circle>
+                <circle cx="19" cy="19" r="2"></circle>
+                <circle cx="5" cy="19" r="2"></circle>
+                <line x1="12" y1="9" x2="12" y2="4"></line>
+                <line x1="9.5" y1="13.5" x2="5.5" y2="17.5"></line>
+                <line x1="14.5" y1="13.5" x2="18.5" y2="17.5"></line>
+              </svg>
+              知识脉络图
+            </h3>
+          </div>
+          <div class="graph-body">
+            <div id="knowledge-graph"></div>
+            <div class="graph-legend" id="graph-legend">
+              <div class="legend-title" id="legend-toggle">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                图例说明
+              </div>
+              <div class="legend-items" id="legend-items">
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #B87333;"></span>
+                  <span>核心概念</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #4E7E5E;"></span>
+                  <span>成本类型</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #4A7AB8;"></span>
+                  <span>相关概念</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background: #E8B84B;"></span>
+                  <span>成本构成</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Knowledge List -->
+      <div class="content-right">
+        <div class="table-card">
+          <div class="table-header">
+            <div class="table-title-area">
+              <h3 class="table-title">知识单元列表</h3>
+              <span class="table-count" id="table-count">0 个单元</span>
+            </div>
+
+            <div class="table-actions">
+              <span class="selected-info" id="selected-info">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                已选择 <strong id="selected-count">0</strong> 个
+              </span>
+              <button class="action-btn" id="select-all-btn">全选</button>
+              <button class="action-btn outline" id="add-to-group-btn" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  <line x1="12" y1="11" x2="12" y2="17"></line>
+                  <line x1="9" y1="14" x2="15" y2="14"></line>
+                </svg>
+                添加到分组
+              </button>
+              <button class="action-btn primary" id="group-btn" disabled>开始分组学习</button>
+            </div>
+          </div>
+
+          <div class="table-wrapper" id="table-wrapper">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+              </svg>
+              <h3>暂无知识单元</h3>
+              <p>输入专业资料后，AI 将自动提炼并生成知识单元，您可以进行分组学习</p>
+            </div>
+
+            <!-- Data Grid -->
+            <div class="unit-grid hidden" id="unit-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Add to Group Modal -->
+<div class="modal-overlay" id="add-to-group-modal">
+  <div class="modal">
+    <button class="modal-close" id="add-to-group-close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="modal-header">
+      <h2 class="modal-title">添加到已有分组</h2>
+    </div>
+
+    <div class="modal-body">
+      <div class="group-select-list" id="group-select-list"></div>
+      <div class="create-new-group-link">
+        <a id="create-new-from-modal">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          + 创建新分组
+        </a>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" id="add-to-group-cancel">取消</button>
+      <button class="btn-primary" id="add-to-group-confirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Strategy Modal -->
+<div class="modal-overlay" id="strategy-modal">
+  <div class="modal">
+    <button class="modal-close" id="strategy-close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="modal-header">
+      <h2 class="modal-title">学习分组策略</h2>
+      <p class="modal-subtitle">根据「7±2」记忆法则，设置每组的学习单元数量</p>
+    </div>
+
+    <div class="modal-body">
+      <div class="strategy-section">
+        <div class="strategy-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+          每组单元数量
+        </div>
+        <div class="strategy-hint">
+          建议每组 5-9 个单元，这是工作记忆的最佳容量范围，可以让学习更高效
+        </div>
+
+        <div class="group-size-options" id="size-options"></div>
+
+        <div class="strategy-result">
+          <div>
+            <span class="result-text">共选择 <strong id="total-units">0</strong> 个单元</span>
+            <span class="result-note">，将分为 <strong id="group-count">0</strong> 组学习</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="strategy-section group-name-section">
+        <div class="form-group">
+          <label class="form-label">保存到知识库（可选）</label>
+          <input type="text" class="form-input" id="group-name-input" placeholder="例如：考研经济学 - 成本概念">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">标签颜色</label>
+          <div class="color-options" id="color-options">
+            <div class="color-option selected" data-color="copper" style="background: var(--copper);"></div>
+            <div class="color-option" data-color="amber" style="background: var(--amber);"></div>
+            <div class="color-option" data-color="sage" style="background: var(--sage);"></div>
+            <div class="color-option" data-color="blue" style="background: var(--blue);"></div>
+            <div class="color-option" data-color="purple" style="background: var(--purple);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" id="strategy-cancel">取消</button>
+      <button class="btn-primary" id="strategy-confirm">开始学习 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Edit Modal -->
+<div class="modal-overlay" id="group-edit-modal">
+  <div class="modal" style="max-width: 360px;">
+    <button class="modal-close" id="group-edit-close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+
+    <div class="modal-header">
+      <h2 class="modal-title" id="edit-modal-title">创建新分组</h2>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">分组名称</label>
+        <input type="text" class="form-input" id="edit-group-name" placeholder="例如：考研资料">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">标签颜色</label>
+        <div class="color-options" id="edit-color-options">
+          <div class="color-option selected" data-color="copper" style="background: var(--copper);"></div>
+          <div class="color-option" data-color="amber" style="background: var(--amber);"></div>
+          <div class="color-option" data-color="sage" style="background: var(--sage);"></div>
+          <div class="color-option" data-color="blue" style="background: var(--blue);"></div>
+          <div class="color-option" data-color="purple" style="background: var(--purple);"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" id="group-edit-cancel">取消</button>
+      <button class="btn-primary" id="group-edit-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+  <span id="toast-text">操作成功</span>
+</div>
+
+<script>
+// ==========================================
+// DATA STORE
+// ==========================================
+const AppState = {
+  groups: [
+    { id: 1, name: '考研资料', color: 'copper', units: [], createdAt: Date.now() },
+    { id: 2, name: '英语词汇', color: 'blue', units: [], createdAt: Date.now() },
+    { id: 3, name: '经济学概念', color: 'sage', units: [], createdAt: Date.now() }
+  ],
+  currentUnits: [],
+  selectedUnits: new Set(),
+  selectedGroupId: null,
+  editingGroupId: null,
+  nextGroupId: 4,
+  groupSize: 7,
+  addToGroupSelectedId: null
+};
+
+const sampleUnits = [
+  { id: 1, title: '沉没成本', status: 'new' },
+  { id: 2, title: '机会成本', status: 'new' },
+  { id: 3, title: '边际成本', status: 'new' },
+  { id: 4, title: '固定成本', status: 'new' },
+  { id: 5, title: '可变成本', status: 'new' },
+  { id: 6, title: '边际效用', status: 'new' },
+  { id: 7, title: '供给弹性', status: 'new' },
+  { id: 8, title: '需求弹性', status: 'new' },
+  { id: 9, title: '市场均衡', status: 'new' },
+  { id: 10, title: '外部性', status: 'new' },
+  { id: 11, title: '公共物品', status: 'new' },
+  { id: 12, title: '信息不对称', status: 'new' },
+  { id: 13, title: '逆向选择', status: 'new' },
+  { id: 14, title: '道德风险', status: 'new' },
+  { id: 15, title: '帕累托最优', status: 'new' }
+];
+
+const samplePdfText = `经济学成本概念详解
+
+1. 沉没成本：已发生的、且与当前决策无关的成本。在做出决策时应当忽略沉没成本，避免"沉没成本谬误"。
+
+2. 机会成本：做出某种选择时放弃的其他选择中最大的收益。它是衡量资源最优配置的重要指标。
+
+3. 边际成本：每增加一单位产量所增加的总成本。边际成本等于边际收益时，厂商利润最大化。
+
+4. 固定成本：不随产量变化而变化的成本，如厂房租金、设备折旧等。
+
+5. 可变成本：随产量变化而变化的成本，如原材料、直接人工等。`;
+
+// ==========================================
+// DOM ELEMENTS
+// ==========================================
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sourceText = document.getElementById('source-text');
+const charCount = document.getElementById('char-count');
+const extractBtn = document.getElementById('extract-btn');
+const emptyState = document.getElementById('empty-state');
+const unitGrid = document.getElementById('unit-grid');
+const tableCount = document.getElementById('table-count');
+const selectAllBtn = document.getElementById('select-all-btn');
+const groupBtn = document.getElementById('group-btn');
+const addToGroupBtn = document.getElementById('add-to-group-btn');
+const selectedInfo = document.getElementById('selected-info');
+const selectedCountEl = document.getElementById('selected-count');
+const groupList = document.getElementById('group-list');
+const createGroupBtn = document.getElementById('create-group-btn');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toast-text');
+
+const modeOptions = document.querySelectorAll('.mode-option');
+const textInputWrapper = document.getElementById('text-input-wrapper');
+const uploadZone = document.getElementById('upload-zone');
+const urlInputWrapper = document.getElementById('url-input-wrapper');
+const fileInput = document.getElementById('file-input');
+const urlInput = document.getElementById('url-input');
+const urlSubmitBtn = document.getElementById('url-submit-btn');
+const expandBtn = document.getElementById('expand-btn');
+
+const addToGroupModal = document.getElementById('add-to-group-modal');
+const addToGroupClose = document.getElementById('add-to-group-close');
+const addToGroupCancel = document.getElementById('add-to-group-cancel');
+const addToGroupConfirm = document.getElementById('add-to-group-confirm');
+const groupSelectList = document.getElementById('group-select-list');
+const createNewFromModal = document.getElementById('create-new-from-modal');
+
+const strategyModal = document.getElementById('strategy-modal');
+const strategyClose = document.getElementById('strategy-close');
+const strategyCancel = document.getElementById('strategy-cancel');
+const strategyConfirm = document.getElementById('strategy-confirm');
+const sizeOptionsContainer = document.getElementById('size-options');
+const totalUnitsEl = document.getElementById('total-units');
+const groupCountEl = document.getElementById('group-count');
+const groupNameInput = document.getElementById('group-name-input');
+const colorOptions = document.getElementById('color-options');
+
+const groupEditModal = document.getElementById('group-edit-modal');
+const groupEditClose = document.getElementById('group-edit-close');
+const groupEditCancel = document.getElementById('group-edit-cancel');
+const groupEditSave = document.getElementById('group-edit-save');
+const editModalTitle = document.getElementById('edit-modal-title');
+const editGroupName = document.getElementById('edit-group-name');
+const editColorOptions = document.getElementById('edit-color-options');
+
+// ==========================================
+// TOAST
+// ==========================================
+function showToast(message) {
+  toastText.textContent = message;
+  toast.classList.add('visible');
+  setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+// ==========================================
+// MODE SWITCHING
+// ==========================================
+modeOptions.forEach(opt => {
+  opt.addEventListener('click', () => {
+    const mode = opt.dataset.mode;
+
+    modeOptions.forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+
+    textInputWrapper.classList.toggle('visible', mode === 'text');
+    uploadZone.classList.toggle('visible', mode === 'pdf');
+    urlInputWrapper.classList.toggle('visible', mode === 'url');
+  });
+});
+
+// ==========================================
+// EXPAND/COLLAPSE
+// ==========================================
+expandBtn.addEventListener('click', () => {
+  sourceText.classList.toggle('expanded');
+  expandBtn.classList.toggle('expanded');
+});
+
+// ==========================================
+// PDF UPLOAD
+// ==========================================
+uploadZone.addEventListener('click', () => fileInput.click());
+
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('dragover');
+});
+
+uploadZone.addEventListener('dragleave', () => {
+  uploadZone.classList.remove('dragover');
+});
+
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) {
+    handleFileUpload(e.dataTransfer.files[0]);
+  }
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFileUpload(e.target.files[0]);
+  }
+});
+
+function handleFileUpload(file) {
+  if (!file.name.endsWith('.pdf')) {
+    alert('请上传 PDF 格式文件');
+    return;
+  }
+
+  uploadZone.classList.add('loading');
+
+  setTimeout(() => {
+    uploadZone.classList.remove('loading');
+
+    modeOptions.forEach(o => o.classList.remove('active'));
+    modeOptions[0].classList.add('active');
+
+    textInputWrapper.classList.add('visible');
+    uploadZone.classList.remove('visible');
+
+    sourceText.value = samplePdfText;
+    sourceText.dispatchEvent(new Event('input'));
+
+    showToast('PDF 解析成功，已提取 5 个知识点');
+  }, 1000);
+}
+
+// ==========================================
+// URL SUBMIT
+// ==========================================
+urlSubmitBtn.addEventListener('click', () => {
+  const urlVal = urlInput.value.trim();
+  if (!urlVal) {
+    alert('请输入网页链接');
+    return;
+  }
+
+  extractBtn.classList.add('loading');
+  extractBtn.querySelector('.btn-text').textContent = '提取中...';
+
+  setTimeout(() => {
+    extractBtn.classList.remove('loading');
+    extractBtn.querySelector('.btn-text').textContent = '重新提炼';
+
+    modeOptions.forEach(o => o.classList.remove('active'));
+    modeOptions[0].classList.add('active');
+    textInputWrapper.classList.add('visible');
+    urlInputWrapper.classList.remove('visible');
+
+    sourceText.value = samplePdfText;
+    sourceText.dispatchEvent(new Event('input'));
+
+    showToast('网页内容提取成功');
+  }, 1500);
+});
+
+// ==========================================
+// SIDEBAR
+// ==========================================
+sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+
+// ==========================================
+// GROUP MANAGEMENT
+// ==========================================
+function renderGroups() {
+  groupList.innerHTML = AppState.groups.map(group => `
+    <div class="group-item ${AppState.selectedGroupId === group.id ? 'active' : ''}" data-id="${group.id}">
+      <div class="group-item-header">
+        <span class="group-name" style="color: var(--${group.color});">${group.name}</span>
+        <span class="group-count">${group.units.length}</span>
+      </div>
+      <div class="group-actions">
+        <button class="group-action-btn edit" title="编辑" data-id="${group.id}">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <button class="group-action-btn delete" title="删除" data-id="${group.id}">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  groupList.querySelectorAll('.group-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (!e.target.closest('.group-action-btn')) {
+        selectGroup(parseInt(item.dataset.id));
+      }
+    });
+  });
+
+  groupList.querySelectorAll('.group-action-btn.edit').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editGroup(parseInt(btn.dataset.id));
+    });
+  });
+
+  groupList.querySelectorAll('.group-action-btn.delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteGroup(parseInt(btn.dataset.id));
+    });
+  });
+}
+
+function selectGroup(id) {
+  AppState.selectedGroupId = id;
+  renderGroups();
+
+  const group = AppState.groups.find(g => g.id === id);
+  if (group && group.units.length > 0) {
+    AppState.currentUnits = [...group.units];
+    AppState.selectedUnits.clear();
+    renderGrid();
+    tableCount.textContent = `${AppState.currentUnits.length} 个单元`;
+    renderKnowledgeGraph();
+  }
+}
+
+function editGroup(id) {
+  const group = AppState.groups.find(g => g.id === id);
+  if (!group) return;
+
+  AppState.editingGroupId = id;
+  editModalTitle.textContent = '编辑分组';
+  editGroupName.value = group.name;
+
+  editColorOptions.querySelectorAll('.color-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.color === group.color);
+  });
+
+  groupEditModal.classList.add('visible');
+}
+
+function deleteGroup(id) {
+  if (confirm('确定要删除这个分组吗？')) {
+    AppState.groups = AppState.groups.filter(g => g.id !== id);
+    if (AppState.selectedGroupId === id) {
+      AppState.selectedGroupId = null;
+    }
+    renderGroups();
+  }
+}
+
+function createGroup() {
+  AppState.editingGroupId = null;
+  editModalTitle.textContent = '创建新分组';
+  editGroupName.value = '';
+  editColorOptions.querySelectorAll('.color-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.color === 'copper');
+  });
+  groupEditModal.classList.add('visible');
+}
+
+function setupColorOptions(container) {
+  container.querySelectorAll('.color-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      container.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+    });
+  });
+}
+
+setupColorOptions(colorOptions);
+setupColorOptions(editColorOptions);
+
+groupEditSave.addEventListener('click', () => {
+  const name = editGroupName.value.trim();
+  const color = editColorOptions.querySelector('.color-option.selected')?.dataset.color || 'copper';
+
+  if (!name) {
+    alert('请输入分组名称');
+    return;
+  }
+
+  if (AppState.editingGroupId) {
+    const group = AppState.groups.find(g => g.id === AppState.editingGroupId);
+    if (group) {
+      group.name = name;
+      group.color = color;
+    }
+  } else {
+    AppState.groups.push({
+      id: AppState.nextGroupId++,
+      name,
+      color,
+      units: [],
+      createdAt: Date.now()
+    });
+  }
+
+  groupEditModal.classList.remove('visible');
+  renderGroups();
+  showToast('分组创建成功');
+});
+
+createGroupBtn.addEventListener('click', createGroup);
+groupEditClose.addEventListener('click', () => groupEditModal.classList.remove('visible'));
+groupEditCancel.addEventListener('click', () => groupEditModal.classList.remove('visible'));
+
+// ==========================================
+// CHARACTER COUNT
+// ==========================================
+sourceText.addEventListener('input', () => {
+  const length = sourceText.value.length;
+  charCount.textContent = `${length} / 5000 字`;
+
+  if (length > 5000) {
+    charCount.classList.add('error');
+    sourceText.classList.add('error');
+  } else {
+    charCount.classList.remove('error');
+    sourceText.classList.remove('error');
+  }
+});
+
+// ==========================================
+// EXTRACT
+// ==========================================
+extractBtn.addEventListener('click', () => {
+  const text = sourceText.value.trim();
+
+  if (text.length === 0) {
+    sourceText.classList.add('error');
+    setTimeout(() => sourceText.classList.remove('error'), 500);
+    return;
+  }
+
+  extractBtn.classList.add('loading');
+  extractBtn.querySelector('.btn-text').textContent = '提炼中...';
+
+  setTimeout(() => {
+    extractBtn.classList.remove('loading');
+    extractBtn.querySelector('.btn-text').textContent = '重新提炼';
+
+    AppState.currentUnits = [...sampleUnits];
+    AppState.selectedUnits.clear();
+    renderGrid();
+    tableCount.textContent = `${AppState.currentUnits.length} 个单元`;
+    renderKnowledgeGraph();
+  }, 1500);
+});
+
+// ==========================================
+// UNIT GRID
+// ==========================================
+function renderGrid() {
+  if (AppState.currentUnits.length === 0) {
+    emptyState.classList.remove('hidden');
+    unitGrid.classList.add('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+  unitGrid.classList.remove('hidden');
+
+  unitGrid.innerHTML = AppState.currentUnits.map(unit => {
+    const isSelected = AppState.selectedUnits.has(unit.id);
+    const statusClass = unit.status || 'new';
+    const statusText = statusClass === 'new' ? '未学习' :
+                       statusClass === 'learning' ? '学习中' : '已掌握';
+
+    return `
+      <div class="unit-card ${isSelected ? 'selected' : ''}" data-id="${unit.id}">
+        <div class="checkbox ${isSelected ? 'checked' : ''}" data-id="${unit.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="unit-card-content">
+          <div class="unit-card-title">${unit.title}</div>
+          <span class="unit-card-status ${statusClass}">
+            <span class="unit-card-status-dot"></span>
+            ${statusText}
+          </span>
+        </div>
+        <div class="unit-card-actions">
+          <button class="unit-card-btn" title="编辑">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="unit-card-btn delete" title="删除">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  unitGrid.querySelectorAll('.unit-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (!e.target.closest('.unit-card-btn')) {
+        toggleUnitSelection(parseInt(card.dataset.id));
+      }
+    });
+  });
+
+  unitGrid.querySelectorAll('.checkbox').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleUnitSelection(parseInt(cb.dataset.id));
+    });
+  });
+
+  updateSelectionUI();
+}
+
+function toggleUnitSelection(id) {
+  if (AppState.selectedUnits.has(id)) {
+    AppState.selectedUnits.delete(id);
+  } else {
+    AppState.selectedUnits.add(id);
+  }
+  renderGrid();
+}
+
+function updateSelectionUI() {
+  const count = AppState.selectedUnits.size;
+  selectedCountEl.textContent = count;
+
+  if (count > 0) {
+    selectedInfo.classList.add('visible');
+  } else {
+    selectedInfo.classList.remove('visible');
+  }
+
+  addToGroupBtn.disabled = count === 0;
+  groupBtn.disabled = count < 5;
+}
+
+selectAllBtn.addEventListener('click', () => {
+  AppState.currentUnits.forEach(unit => {
+    AppState.selectedUnits.add(unit.id);
+  });
+  renderGrid();
+});
+
+// ==========================================
+// ADD TO GROUP MODAL
+// ==========================================
+addToGroupBtn.addEventListener('click', () => {
+  AppState.addToGroupSelectedId = null;
+  renderGroupSelectList();
+  addToGroupModal.classList.add('visible');
+});
+
+function renderGroupSelectList() {
+  groupSelectList.innerHTML = AppState.groups.map(group => `
+    <div class="group-select-item" data-id="${group.id}">
+      <div class="group-select-radio"></div>
+      <div class="group-select-info">
+        <div class="group-select-name" style="color: var(--${group.color});">${group.name}</div>
+        <div class="group-select-count">已包含 ${group.units.length} 个单元</div>
+      </div>
+    </div>
+  `).join('');
+
+  groupSelectList.querySelectorAll('.group-select-item').forEach(item => {
+    item.addEventListener('click', () => {
+      groupSelectList.querySelectorAll('.group-select-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      AppState.addToGroupSelectedId = parseInt(item.dataset.id);
+    });
+  });
+}
+
+addToGroupClose.addEventListener('click', () => addToGroupModal.classList.remove('visible'));
+addToGroupCancel.addEventListener('click', () => addToGroupModal.classList.remove('visible'));
+
+createNewFromModal.addEventListener('click', () => {
+  addToGroupModal.classList.remove('visible');
+  createGroup();
+});
+
+addToGroupConfirm.addEventListener('click', () => {
+  if (!AppState.addToGroupSelectedId) {
+    alert('请选择一个分组');
+    return;
+  }
+
+  const group = AppState.groups.find(g => g.id === AppState.addToGroupSelectedId);
+  if (group) {
+    const selectedUnits = AppState.currentUnits.filter(u => AppState.selectedUnits.has(u.id));
+    group.units = [...group.units, ...selectedUnits];
+
+    addToGroupModal.classList.remove('visible');
+    renderGroups();
+    showToast(`已成功添加到分组：${group.name}`);
+  }
+});
+
+// ==========================================
+// GROUP STRATEGY MODAL
+// ==========================================
+groupBtn.addEventListener('click', () => {
+  if (AppState.selectedUnits.size < 5) return;
+
+  generateSizeOptions();
+  totalUnitsEl.textContent = AppState.selectedUnits.size;
+  updateGroupCount();
+  groupNameInput.value = '';
+
+  strategyModal.classList.add('visible');
+});
+
+function generateSizeOptions() {
+  const total = AppState.selectedUnits.size;
+  let html = '';
+
+  for (let size = 5; size <= 9; size++) {
+    const isDisabled = size > total;
+    const isSelected = size === AppState.groupSize && !isDisabled;
+
+    html += `
+      <div class="size-option ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" data-size="${size}">
+        <div class="size-number">${size}</div>
+        <div class="size-label">个/组</div>
+      </div>
+    `;
+  }
+
+  sizeOptionsContainer.innerHTML = html;
+
+  sizeOptionsContainer.querySelectorAll('.size-option:not(.disabled)').forEach(opt => {
+    opt.addEventListener('click', () => {
+      sizeOptionsContainer.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      AppState.groupSize = parseInt(opt.dataset.size);
+      updateGroupCount();
+    });
+  });
+}
+
+function updateGroupCount() {
+  const groups = Math.ceil(AppState.selectedUnits.size / AppState.groupSize);
+  groupCountEl.textContent = groups;
+}
+
+strategyClose.addEventListener('click', () => strategyModal.classList.remove('visible'));
+strategyCancel.addEventListener('click', () => strategyModal.classList.remove('visible'));
+
+strategyConfirm.addEventListener('click', () => {
+  const groupName = groupNameInput.value.trim();
+  const color = colorOptions.querySelector('.color-option.selected')?.dataset.color || 'copper';
+
+  const selectedUnits = AppState.currentUnits.filter(u => AppState.selectedUnits.has(u.id));
+
+  if (groupName) {
+    AppState.groups.push({
+      id: AppState.nextGroupId++,
+      name: groupName,
+      color,
+      units: [...selectedUnits],
+      createdAt: Date.now()
+    });
+    renderGroups();
+  }
+
+  // Save selected units to localStorage for 4.html
+  const learningData = selectedUnits.map((unit, index) => ({
+    id: unit.id,
+    term: unit.title,
+    anchor: generateAnchor(unit.title),
+    definition: generateDefinition(unit.title),
+    scenario: generateScenario(unit.title)
+  }));
+
+  localStorage.setItem('learningUnits', JSON.stringify(learningData));
+
+  strategyModal.classList.remove('visible');
+  window.location.href = '4.html';
+
+  AppState.selectedUnits.clear();
+  renderGrid();
+});
+
+// Helper functions to generate card content
+function generateAnchor(term) {
+  const anchors = {
+    '沉没成本': '记忆锚点：<span class="blank"></span>的、且与<span class="blank"></span>无关的成本。',
+    '机会成本': '记忆锚点：做出选择后<span class="blank"></span>的代价。',
+    '边际成本': '记忆锚点：每增加一单位<span class="blank"></span>所增加的成本。',
+    '固定成本': '记忆锚点：<span class="blank"></span>产量变化的成本。',
+    '可变成本': '记忆锚点：<span class="blank"></span>产量变化的成本。',
+    '边际效用': '记忆锚点：每增加一单位消费带来的<span class="blank"></span>的增量。',
+    '供给弹性': '记忆锚点：价格变动1%引起<span class="blank"></span>变动的百分比。',
+    '需求弹性': '记忆锚点：价格变动1%引起<span class="blank"></span>变动的百分比。',
+    '市场均衡': '记忆锚点：<span class="blank"></span>等于<span class="blank"></span>时的状态。',
+    '外部性': '记忆锚点：经济活动对<span class="blank"></span>造成的<span class="blank"></span>。'
+  };
+  return anchors[term] || `记忆锚点：关于「${term}」的核心定义。`;
+}
+
+function generateDefinition(term) {
+  const definitions = {
+    '沉没成本': '已发生的、且与当前决策无关的成本。<br>启示：不应为沉没成本继续投入资源。',
+    '机会成本': '做出选择后放弃的最大代价。<br>任何选择都有机会成本，即使是"不做选择"。',
+    '边际成本': '每增加一单位产量所增加的成本。<br>决策时只需考虑边际成本与边际收益。',
+    '固定成本': '不随产量变化的成本。<br>无论生产多少，这部分成本必须支付。',
+    '可变成本': '随产量变化的成本。<br>产量越高，可变成本越大。',
+    '边际效用': '每增加一单位消费带来的满足感增量。<br>通常呈现递减规律。',
+    '供给弹性': '价格变动引起供给量变动的敏感程度。<br>弹性大意味着供给对价格变化反应灵敏。',
+    '需求弹性': '价格变动引起需求量变动的敏感程度。<br>弹性大意味着需求对价格变化反应灵敏。',
+    '市场均衡': '供给量等于需求量时的市场状态。<br>此时价格稳定，无过剩或短缺。',
+    '外部性': '经济活动对第三方产生的影响。<br>分为正外部性和负外部性。'
+  };
+  return definitions[term] || `「${term}」是经济学中的重要概念。`;
+}
+
+function generateScenario(term) {
+  const scenarios = {
+    '沉没成本': '当项目亏损时，决策者常因已有投入而难以割舍...',
+    '机会成本': '周末选择加班赚钱，机会成本是与家人相处的时间...',
+    '边际成本': '电商平台新增一个订单的配送成本...',
+    '固定成本': '厂房租金、管理人员工资等...',
+    '可变成本': '原材料、计件工资等...',
+    '边际效用': '吃第一块蛋糕很满足，第十块可能腻了...',
+    '供给弹性': '农产品供给弹性通常较小...',
+    '需求弹性': '奢侈品需求弹性通常较大...',
+    '市场均衡': '房价波动最终会趋于供需平衡...',
+    '外部性': '工厂排放污染影响周边居民健康...'
+  };
+  return scenarios[term] || `在实际生活中，「${term}」的例子随处可见...`;
+}
+
+// ==========================================
+// KNOWLEDGE GRAPH
+// ==========================================
+function renderKnowledgeGraph() {
+  const chartDom = document.getElementById('knowledge-graph');
+  const myChart = echarts.init(chartDom);
+
+  const graphData = {
+    nodes: [
+      { name: '经济学成本', symbolSize: 50, category: 0, itemStyle: { color: '#B87333' } },
+      { name: '沉没成本', symbolSize: 28, category: 1, itemStyle: { color: '#4E7E5E' } },
+      { name: '机会成本', symbolSize: 28, category: 1, itemStyle: { color: '#4E7E5E' } },
+      { name: '边际成本', symbolSize: 28, category: 2, itemStyle: { color: '#4A7AB8' } },
+      { name: '固定成本', symbolSize: 28, category: 3, itemStyle: { color: '#E8B84B' } },
+      { name: '可变成本', symbolSize: 28, category: 3, itemStyle: { color: '#E8B84B' } }
+    ],
+    links: [
+      { source: '经济学成本', target: '沉没成本' },
+      { source: '经济学成本', target: '机会成本' },
+      { source: '经济学成本', target: '边际成本' },
+      { source: '经济学成本', target: '固定成本' },
+      { source: '经济学成本', target: '可变成本' },
+      { source: '边际成本', target: '固定成本' },
+      { source: '边际成本', target: '可变成本' }
+    ]
+  };
+
+  const option = {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'item',
+      backgroundColor: 'rgba(44, 26, 14, 0.9)',
+      borderColor: '#DEC9A8',
+      textStyle: { color: '#FCF7EE', fontSize: 11 }
+    },
+    series: [{
+      type: 'graph',
+      layout: 'force',
+      data: graphData.nodes,
+      links: graphData.links,
+      roam: true,
+      draggable: true,
+      label: {
+        show: true,
+        position: 'bottom',
+        color: '#2C1A0E',
+        fontSize: 10,
+        fontFamily: 'Noto Serif SC'
+      },
+      force: {
+        repulsion: 150,
+        edgeLength: [60, 100],
+        gravity: 0.15
+      },
+      lineStyle: {
+        color: '#DEC9A8',
+        width: 1.5,
+        curveness: 0.1
+      },
+      emphasis: {
+        focus: 'adjacency',
+        lineStyle: { width: 2.5, color: '#B87333' }
+      }
+    }]
+  };
+
+  myChart.setOption(option);
+  window.addEventListener('resize', () => myChart.resize());
+}
+
+// ==========================================
+// INIT
+// ==========================================
+renderGroups();
+</script>
+
+</body>
+</html>

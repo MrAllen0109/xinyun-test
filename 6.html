@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>复盘日记 - 芯云</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM — 芯云 Warm Scholar Palette
+       ===================================================== */
+    :root {
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.88);
+
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+
+      --amber:        #E8B84B;
+      --amber-tint:   rgba(232, 184, 75, 0.15);
+      --sage:         #4E7E5E;
+      --sage-tint:    rgba(78, 126, 94, 0.12);
+      --blue:         #4A7AB8;
+      --blue-tint:    rgba(74, 122, 184, 0.12);
+      --purple:       #8B6BB5;
+      --purple-tint:  rgba(139, 107, 181, 0.12);
+
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+
+      --shadow-sm:    0 2px 8px rgba(44,26,14,0.07);
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+      --shadow-lg:    0 16px 48px rgba(44,26,14,0.14);
+
+      --font-serif:   'Noto Serif SC', 'Songti SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+      --r-sm: 6px;
+      --r-md: 10px;
+      --r-lg: 16px;
+      --r-xl: 24px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background:
+        radial-gradient(circle at 18% 20%, rgba(232, 184, 75, 0.14) 0%, transparent 24%),
+        radial-gradient(circle at 82% 14%, rgba(184, 115, 51, 0.11) 0%, transparent 22%),
+        radial-gradient(circle at 84% 72%, rgba(78, 126, 94, 0.08) 0%, transparent 24%),
+        linear-gradient(180deg, #F7F0E4 0%, var(--bg) 28%, #FBF6EE 100%);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      isolation: isolate;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        linear-gradient(115deg, transparent 0 42%, rgba(184, 115, 51, 0.035) 42.5%, transparent 43%, transparent 57%, rgba(232, 184, 75, 0.03) 57.5%, transparent 58%),
+        linear-gradient(25deg, transparent 0 46%, rgba(78, 126, 94, 0.03) 46.5%, transparent 47%, transparent 69%, rgba(74, 122, 184, 0.028) 69.5%, transparent 70%),
+        radial-gradient(circle at center, rgba(255, 249, 243, 0) 0%, rgba(255, 249, 243, 0) 55%, rgba(240, 228, 204, 0.35) 100%);
+      opacity: 0.9;
+    }
+
+    /* Grain texture overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    /* =====================================================
+       NAVIGATION
+       ===================================================== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      padding: 0 52px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid transparent;
+      transition: all 0.4s;
+    }
+
+    nav.scrolled {
+      border-bottom-color: var(--border-light);
+      background: rgba(252, 247, 238, 0.96);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--copper) 0%, var(--copper-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px var(--copper-glow);
+    }
+
+    .logo-mark svg { width: 18px; height: 18px; fill: white; }
+
+    .logo-text {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--ink-mid);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--copper); }
+    .nav-links a.active { color: var(--copper); font-weight: 600; }
+
+    /* =====================================================
+       HEADER / CELEBRATION
+       ===================================================== */
+    .header-banner {
+      padding: 120px 52px 60px;
+      text-align: center;
+      position: relative;
+      background:
+        linear-gradient(180deg, rgba(240, 228, 204, 0.92) 0%, rgba(252, 247, 238, 0.82) 62%, rgba(252, 247, 238, 0.98) 100%),
+        radial-gradient(circle at top center, rgba(232, 184, 75, 0.18) 0%, transparent 38%);
+      overflow: hidden;
+      border-bottom: 1px solid rgba(222, 201, 168, 0.55);
+    }
+
+    .header-banner::before {
+      content: '';
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 180px;
+      background:
+        linear-gradient(180deg, rgba(252, 247, 238, 0) 0%, rgba(252, 247, 238, 0.8) 100%),
+        repeating-linear-gradient(
+          90deg,
+          rgba(184, 115, 51, 0.04) 0,
+          rgba(184, 115, 51, 0.04) 1px,
+          transparent 1px,
+          transparent 108px
+        );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Confetti Canvas */
+    #confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .header-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, var(--copper), var(--amber));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: white;
+      box-shadow: 0 10px 30px var(--copper-glow);
+      animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transform: scale(0);
+      position: relative;
+      z-index: 2;
+    }
+
+    @keyframes popIn {
+      to { transform: scale(1); }
+    }
+
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 2;
+    }
+
+    .page-subtitle {
+      font-size: 16px;
+      color: var(--ink-mid);
+      font-weight: 500;
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* =====================================================
+       CONTENT LAYOUT
+       ===================================================== */
+    main {
+      flex: 1;
+      padding: 0 52px 100px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .diary-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 40px;
+      margin-top: 40px;
+    }
+
+    /* =====================================================
+       LEFT COLUMN - SUMMARY & COACHING
+       ===================================================== */
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Data Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-lg);
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+      border-color: var(--copper-tint);
+    }
+
+    .stat-value {
+      font-family: var(--font-serif);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--copper);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--ink-faint);
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+    }
+
+    /* AI Coach Summary */
+    .coach-summary {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 40px;
+      position: relative;
+      margin-bottom: 40px;
+    }
+
+    .coach-summary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--copper), var(--amber));
+      border-top-left-radius: var(--r-xl);
+      border-top-right-radius: var(--r-xl);
+    }
+
+    .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .coach-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--sage-tint);
+      border: 1.5px solid rgba(78, 126, 94, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .coach-name {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .coach-role {
+      font-size: 12px;
+      color: var(--sage);
+      font-family: var(--font-mono);
+    }
+
+    /* 3-Part Summary */
+    .summary-part {
+      margin-bottom: 24px;
+    }
+
+    .summary-part:last-child {
+      margin-bottom: 0;
+    }
+
+    .part-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .part-title .icon {
+      color: var(--copper);
+    }
+
+    .part-content {
+      font-size: 15px;
+      color: var(--ink-mid);
+      line-height: 1.8;
+      padding: 16px 20px;
+      background: var(--bg);
+      border-radius: var(--r-md);
+      border-left: 3px solid var(--border);
+    }
+
+    .part-content strong {
+      color: var(--copper-dark);
+      background: var(--amber-tint);
+      padding: 0 4px;
+      border-radius: 2px;
+    }
+
+    /* =====================================================
+       RIGHT COLUMN - CALENDAR & RADAR
+       ===================================================== */
+    /* Radar Chart */
+    .radar-card {
+      background:
+        linear-gradient(180deg, rgba(255, 249, 243, 0.96) 0%, rgba(252, 247, 238, 0.9) 100%);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-lg);
+      padding: 32px;
+      margin-bottom: 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .radar-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top center, rgba(232, 184, 75, 0.14) 0%, transparent 34%),
+        linear-gradient(135deg, rgba(184, 115, 51, 0.05) 0%, transparent 45%, rgba(78, 126, 94, 0.05) 100%);
+      pointer-events: none;
+    }
+
+    .radar-card .section-title {
+      position: relative;
+      z-index: 1;
+    }
+
+    .radar-shell {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 18px;
+      justify-items: center;
+    }
+
+    .radar-chart {
+      width: min(100%, 300px);
+      aspect-ratio: 1;
+      display: block;
+      filter: drop-shadow(0 10px 20px rgba(184, 115, 51, 0.12));
+    }
+
+    .radar-caption {
+      max-width: 290px;
+      padding: 14px 16px;
+      border-radius: var(--r-md);
+      background: rgba(252, 247, 238, 0.88);
+      border: 1px solid rgba(222, 201, 168, 0.7);
+      color: var(--ink-mid);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .radar-caption strong {
+      color: var(--copper-dark);
+      font-weight: 700;
+    }
+
+    .dimension-list {
+      width: 100%;
+      display: grid;
+      gap: 10px;
+      text-align: left;
+    }
+
+    .dimension-item {
+      display: grid;
+      grid-template-columns: 58px 1fr 34px;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--ink-mid);
+    }
+
+    .dimension-name {
+      font-family: var(--font-serif);
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .dimension-track {
+      height: 8px;
+      border-radius: var(--r-xl);
+      background: rgba(222, 201, 168, 0.42);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .dimension-track::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.26), transparent 70%);
+      pointer-events: none;
+    }
+
+    .dimension-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--copper) 0%, var(--amber) 55%, var(--sage) 100%);
+      box-shadow: 0 0 12px rgba(184, 115, 51, 0.14);
+    }
+
+    .dimension-score {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--ink-faint);
+      text-align: right;
+    }
+
+    /* Calendar */
+    .calendar-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-lg);
+      padding: 32px;
+    }
+
+    .cal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .cal-month {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .cal-streak {
+      font-size: 12px;
+      color: var(--copper);
+      background: var(--copper-tint);
+      padding: 4px 12px;
+      border-radius: var(--r-full);
+      font-weight: 600;
+    }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .cal-day-name {
+      font-size: 11px;
+      color: var(--ink-faint);
+      font-family: var(--font-mono);
+      margin-bottom: 8px;
+    }
+
+    .cal-date {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: var(--ink-mid);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cal-date:hover:not(.empty) {
+      background: var(--bg-deep);
+    }
+
+    .cal-date.done {
+      background: var(--sage-tint);
+      color: var(--sage);
+      font-weight: 700;
+      border: 1px solid rgba(78, 126, 94, 0.3);
+    }
+
+    .cal-date.today {
+      background: var(--copper);
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 4px 12px var(--copper-glow);
+    }
+
+    .cal-date.empty {
+      color: transparent;
+      pointer-events: none;
+    }
+
+    /* Actions */
+    .action-row {
+      display: flex;
+      gap: 16px;
+      margin-top: 40px;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      padding: 16px 40px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--r-md);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--copper);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px var(--copper-glow);
+    }
+
+    .btn-outline {
+      padding: 14px 32px;
+      background: transparent;
+      color: var(--ink-mid);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--copper);
+      color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+    @media (max-width: 1024px) {
+      .diary-grid { grid-template-columns: 1fr; }
+      main { padding: 0 32px 80px; }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      .header-banner { padding: 100px 24px 40px; }
+      .page-title { font-size: 32px; }
+      main { padding: 0 24px 60px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .coach-summary { padding: 24px; }
+      .action-row { flex-direction: column; }
+      .btn-primary, .btn-outline { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+
+<nav id="navbar">
+  <a class="nav-logo" href="1.html">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <div class="logo-text">芯云</div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="3.html">工作台</a></li>
+    <li><a href="#">我的知识库</a></li>
+    <li><a href="#" class="active">学习日记</a></li>
+  </ul>
+</nav>
+
+<!-- Celebration Header -->
+<header class="header-banner">
+  <canvas id="confetti"></canvas>
+  <div class="header-icon">🏅</div>
+  <h1 class="page-title">太棒了，今日打卡完成！</h1>
+  <p class="page-subtitle">知识只有在应用中才能存活，今天你又把 5 个概念变成了本能。</p>
+</header>
+
+<main>
+  <div class="diary-grid">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
+
+      <h2 class="section-title">今日战绩</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">5</div>
+          <div class="stat-label">新增词汇数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">85%</div>
+          <div class="stat-label">实战应用率</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">12</div>
+          <div class="stat-label">专注分钟数</div>
+        </div>
+      </div>
+
+      <div class="coach-summary">
+        <div class="summary-header">
+          <div class="coach-avatar">🦉</div>
+          <div>
+            <div class="coach-name">AI 认知教练的复盘日记</div>
+            <div class="coach-role">基于双 Agent 演练结果生成</div>
+          </div>
+        </div>
+
+        <div class="summary-part">
+          <div class="part-title"><span class="icon">✨</span> 肯定与亮点</div>
+          <div class="part-content">
+            今天你对<strong>「沉没成本」</strong>的理解非常通透。在业务场景演练中，你没有死记硬背概念，而是直接用“历史投入不应捆绑未来决策”的大白话成功说服了运营小张，这说明你已经将这个概念内化为直觉。
+          </div>
+        </div>
+
+        <div class="summary-part">
+          <div class="part-title"><span class="icon">🔍</span> 诊断与洞察</div>
+          <div class="part-content">
+            在分辨<strong>「机会成本」</strong>和<strong>「边际成本」</strong>时，你出现了短暂的迟疑（思考耗时 > 15秒）。这通常是因为这两个概念在“选择”和“新增”的边界上容易混淆。实战中，你更倾向于平铺直叙，结构化（Structure）评分略低于其他维度。
+          </div>
+        </div>
+
+        <div class="summary-part">
+          <div class="part-title"><span class="icon">🎯</span> 明日建议</div>
+          <div class="part-content">
+            明天复习时，我会把「机会成本」和「边际成本」放在同一个场景中让你进行对比演练。建议在回答时，尝试使用<strong>“首先...其次...因此...”</strong>的句式，这会大大提升你的结构化表达得分。保持节奏，明天见！
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-right">
+
+      <div class="radar-card">
+        <h2 class="section-title" style="justify-content: center; font-size: 18px; margin-bottom: 24px;">五维能力画像</h2>
+        <div class="radar-shell">
+          <svg class="radar-chart" viewBox="0 0 320 320" aria-label="五维能力画像雷达图" role="img">
+            <defs>
+              <linearGradient id="radarStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#B87333" />
+                <stop offset="55%" stop-color="#E8B84B" />
+                <stop offset="100%" stop-color="#4E7E5E" />
+              </linearGradient>
+              <linearGradient id="radarFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(184, 115, 51, 0.34)" />
+                <stop offset="100%" stop-color="rgba(78, 126, 94, 0.18)" />
+              </linearGradient>
+            </defs>
+
+            <g transform="translate(160 160)">
+              <polygon points="0,-118 112,-36 69,95 -69,95 -112,-36" fill="none" stroke="rgba(222, 201, 168, 0.55)" stroke-width="1.2"/>
+              <polygon points="0,-94 90,-29 56,76 -56,76 -90,-29" fill="none" stroke="rgba(222, 201, 168, 0.48)" stroke-width="1.2"/>
+              <polygon points="0,-70 67,-22 41,57 -41,57 -67,-22" fill="none" stroke="rgba(222, 201, 168, 0.42)" stroke-width="1.2"/>
+              <polygon points="0,-46 44,-14 27,38 -27,38 -44,-14" fill="none" stroke="rgba(222, 201, 168, 0.34)" stroke-width="1.2"/>
+              <polygon points="0,-22 21,-7 13,18 -13,18 -21,-7" fill="none" stroke="rgba(222, 201, 168, 0.28)" stroke-width="1.2"/>
+
+              <line x1="0" y1="0" x2="0" y2="-118" stroke="rgba(200,176,154,0.7)" stroke-width="1"/>
+              <line x1="0" y1="0" x2="112" y2="-36" stroke="rgba(200,176,154,0.7)" stroke-width="1"/>
+              <line x1="0" y1="0" x2="69" y2="95" stroke="rgba(200,176,154,0.7)" stroke-width="1"/>
+              <line x1="0" y1="0" x2="-69" y2="95" stroke="rgba(200,176,154,0.7)" stroke-width="1"/>
+              <line x1="0" y1="0" x2="-112" y2="-36" stroke="rgba(200,176,154,0.7)" stroke-width="1"/>
+
+              <polygon points="0,-95 75,-24 52,72 -41,57 -88,-28" fill="url(#radarFill)" stroke="url(#radarStroke)" stroke-width="3"/>
+
+              <circle cx="0" cy="-95" r="4.5" fill="#B87333"/>
+              <circle cx="75" cy="-24" r="4.5" fill="#D4915A"/>
+              <circle cx="52" cy="72" r="4.5" fill="#E8B84B"/>
+              <circle cx="-41" cy="57" r="4.5" fill="#8B6BB5"/>
+              <circle cx="-88" cy="-28" r="4.5" fill="#4E7E5E"/>
+            </g>
+
+            <text x="160" y="22" text-anchor="middle" font-family="'Noto Serif SC', serif" font-size="15" fill="#2C1A0E">活用</text>
+            <text x="282" y="104" text-anchor="middle" font-family="'Noto Serif SC', serif" font-size="15" fill="#2C1A0E">辨析</text>
+            <text x="235" y="286" text-anchor="middle" font-family="'Noto Serif SC', serif" font-size="15" fill="#2C1A0E">关联</text>
+            <text x="84" y="286" text-anchor="middle" font-family="'Noto Serif SC', serif" font-size="15" fill="#2C1A0E">迁移</text>
+            <text x="38" y="104" text-anchor="middle" font-family="'Noto Serif SC', serif" font-size="15" fill="#2C1A0E">结构</text>
+          </svg>
+
+          <div class="radar-caption">
+            你今天的能力分布呈现出<strong>“高活用、强辨析、待补结构”</strong>的走势：概念能落地，表达还可以更有章法。
+          </div>
+
+          <div class="dimension-list" aria-label="五维能力得分列表">
+            <div class="dimension-item">
+              <span class="dimension-name">活用</span>
+              <div class="dimension-track"><div class="dimension-fill" style="width: 82%;"></div></div>
+              <span class="dimension-score">82</span>
+            </div>
+            <div class="dimension-item">
+              <span class="dimension-name">辨析</span>
+              <div class="dimension-track"><div class="dimension-fill" style="width: 75%;"></div></div>
+              <span class="dimension-score">75</span>
+            </div>
+            <div class="dimension-item">
+              <span class="dimension-name">关联</span>
+              <div class="dimension-track"><div class="dimension-fill" style="width: 68%;"></div></div>
+              <span class="dimension-score">68</span>
+            </div>
+            <div class="dimension-item">
+              <span class="dimension-name">迁移</span>
+              <div class="dimension-track"><div class="dimension-fill" style="width: 55%;"></div></div>
+              <span class="dimension-score">55</span>
+            </div>
+            <div class="dimension-item">
+              <span class="dimension-name">结构</span>
+              <div class="dimension-track"><div class="dimension-fill" style="width: 48%;"></div></div>
+              <span class="dimension-score">48</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-card">
+        <div class="cal-header">
+          <div class="cal-month">2025 年 5 月</div>
+          <div class="cal-streak">🔥 连续打卡 3 天</div>
+        </div>
+
+        <div class="cal-grid">
+          <div class="cal-day-name">一</div>
+          <div class="cal-day-name">二</div>
+          <div class="cal-day-name">三</div>
+          <div class="cal-day-name">四</div>
+          <div class="cal-day-name">五</div>
+          <div class="cal-day-name">六</div>
+          <div class="cal-day-name">日</div>
+
+          <!-- Empty days -->
+          <div class="cal-date empty"></div>
+          <div class="cal-date empty"></div>
+          <div class="cal-date empty"></div>
+
+          <!-- Dates -->
+          <div class="cal-date">1</div>
+          <div class="cal-date">2</div>
+          <div class="cal-date">3</div>
+          <div class="cal-date">4</div>
+          <div class="cal-date">5</div>
+          <div class="cal-date done">6</div>
+          <div class="cal-date done">7</div>
+          <div class="cal-date today">8</div>
+          <div class="cal-date">9</div>
+          <div class="cal-date">10</div>
+          <div class="cal-date">11</div>
+          <div class="cal-date">12</div>
+          <div class="cal-date">13</div>
+          <div class="cal-date">14</div>
+          <div class="cal-date">15</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="action-row">
+    <button class="btn-primary" onclick="location.href='3.html'">继续提炼新知识</button>
+    <button class="btn-outline">分享今日战绩 ↗</button>
+  </div>
+
+</main>
+
+<script>
+  /* ─────────────────────────────────────────────
+     NAV SCROLL
+     ───────────────────────────────────────────── */
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  /* ─────────────────────────────────────────────
+     Ambient Header Glow
+     ───────────────────────────────────────────── */
+  const headerBanner = document.querySelector('.header-banner');
+  const ambientGlow = document.createElement('div');
+  ambientGlow.setAttribute('aria-hidden', 'true');
+  ambientGlow.style.position = 'absolute';
+  ambientGlow.style.width = '520px';
+  ambientGlow.style.height = '520px';
+  ambientGlow.style.left = '50%';
+  ambientGlow.style.top = '34%';
+  ambientGlow.style.transform = 'translate(-50%, -50%)';
+  ambientGlow.style.borderRadius = '50%';
+  ambientGlow.style.background = 'radial-gradient(circle, rgba(232,184,75,0.18) 0%, rgba(184,115,51,0.08) 32%, rgba(252,247,238,0) 72%)';
+  ambientGlow.style.filter = 'blur(18px)';
+  ambientGlow.style.pointerEvents = 'none';
+  ambientGlow.style.zIndex = '0';
+  headerBanner.prepend(ambientGlow);
+
+  /* ─────────────────────────────────────────────
+     CONFETTI CELEBRATION (Lightweight Canvas)
+     ───────────────────────────────────────────── */
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = 400; // Header height roughly
+
+  const pieces = [];
+  const colors = ['#B87333', '#D4915A', '#E8B84B', '#4E7E5E'];
+
+  for (let i = 0; i < 80; i++) {
+    pieces.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2 + 50,
+      vx: (Math.random() - 0.5) * 15,
+      vy: (Math.random() - 1) * 15 - 5,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 10
+    });
+  }
+
+  function renderConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let active = false;
+
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.5; // gravity
+      p.rotation += p.rotationSpeed;
+
+      if (p.y < canvas.height) active = true;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+      ctx.restore();
+    });
+
+    if (active) {
+      requestAnimationFrame(renderConfetti);
+    }
+  }
+
+  // Delay confetti slightly for impact
+  setTimeout(() => {
+    requestAnimationFrame(renderConfetti);
+  }, 300);
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+  });
+</script>
+
+</body>
+</html>

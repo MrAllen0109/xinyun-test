@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>芯云 — 芯有云所，忆动生灵</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =====================================================
+       DESIGN SYSTEM — 芯云 Warm Scholar Palette
+       ===================================================== */
+    :root {
+      /* Backgrounds */
+      --bg:           #FCF7EE;
+      --bg-surface:   #FFF9F3;
+      --bg-deep:      #F0E4CC;
+      --bg-overlay:   rgba(252, 247, 238, 0.88);
+
+      /* Brand Colors */
+      --copper:       #B87333;
+      --copper-light: #D4915A;
+      --copper-dark:  #8C5520;
+      --copper-glow:  rgba(184, 115, 51, 0.28);
+      --copper-tint:  rgba(184, 115, 51, 0.10);
+
+      /* Ink */
+      --ink:          #2C1A0E;
+      --ink-mid:      #6B4C32;
+      --ink-faint:    #A8896B;
+      --ink-ghost:    #C8B09A;
+
+      /* Borders */
+      --border:       #DEC9A8;
+      --border-light: #EDE0CC;
+
+      /* Shadows */
+      --shadow-sm:    0 2px 8px rgba(44,26,14,0.07);
+      --shadow-md:    0 6px 24px rgba(44,26,14,0.10);
+
+      /* Typography */
+      --font-serif:   'Noto Serif SC', 'Songti SC', Georgia, serif;
+      --font-sans:    'Noto Sans SC', 'PingFang SC', sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+
+      /* Radius */
+      --r-sm: 6px;
+      --r-md: 10px;
+    }
+
+    /* =====================================================
+       RESET & BASE
+       ===================================================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grain texture overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.022;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+    }
+
+    /* =====================================================
+       NAVIGATION
+       ===================================================== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 500;
+      padding: 0 52px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(24px) saturate(1.4);
+      border-bottom: 1px solid transparent;
+      transition: all 0.4s;
+    }
+
+    nav.scrolled {
+      border-bottom-color: var(--border-light);
+      background: rgba(252, 247, 238, 0.96);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, var(--copper) 0%, var(--copper-light) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 10px var(--copper-glow);
+    }
+
+    .logo-mark svg { width: 18px; height: 18px; fill: white; }
+
+    .logo-text {
+      font-family: var(--font-serif);
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--ink-mid);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--copper); }
+
+    .nav-btn {
+      padding: 8px 22px;
+      background: var(--ink);
+      color: var(--bg) !important;
+      border-radius: var(--r-sm);
+      font-weight: 600 !important;
+      transition: all 0.2s !important;
+    }
+
+    .nav-btn:hover {
+      background: var(--copper) !important;
+      box-shadow: 0 4px 14px var(--copper-glow) !important;
+    }
+
+    /* =====================================================
+       HERO SECTION
+       ===================================================== */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 120px 52px 80px;
+    }
+
+    /* Background Animation Canvas */
+    #bg-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .hero-glow {
+      position: absolute;
+      width: 800px; height: 800px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(232,184,75,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      max-width: 800px;
+    }
+
+    .hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(48px, 8vw, 82px);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      margin-bottom: 32px;
+    }
+
+    .hero-title span.hi {
+      color: var(--copper);
+      position: relative;
+    }
+
+    /* Text based on user request */
+    .hero-desc {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--ink-mid);
+      margin: 0 auto 40px;
+      line-height: 1.8;
+      font-family: var(--font-serif);
+      font-weight: 600;
+    }
+
+    .hero-desc p {
+      margin-bottom: 8px;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hero-desc p.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero-desc p:nth-child(2) { transition-delay: 0.2s; }
+    .hero-desc p:nth-child(3) { transition-delay: 0.4s; }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s 0.8s ease;
+    }
+
+    .hero-actions.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      padding: 15px 40px;
+      background: var(--ink);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--r-md);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+      background: var(--copper);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px var(--copper-glow);
+    }
+
+    .btn-outline {
+      padding: 14px 34px;
+      background: transparent;
+      color: var(--ink-mid);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--copper);
+      background: var(--copper-tint);
+    }
+
+    /* Scroll Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s ease-out;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 0 24px; }
+      .nav-links { display: none; }
+      .hero { padding: 100px 24px; }
+      .hero-title { font-size: 42px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<nav id="navbar">
+  <a class="nav-logo" href="1.html">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <div class="logo-text">芯云</div>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">核心功能</a></li>
+    <li><a href="#">学习闭环</a></li>
+    <li><a href="#">演练室</a></li>
+    <li><a href="2.html" class="nav-btn">免费体验</a></li>
+  </ul>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+  <div class="hero-content">
+    <h1 class="hero-title reveal">
+      <span class="hi">芯</span>有云所，<span class="hi">忆</span>动生灵
+    </h1>
+
+    <div class="hero-desc">
+      <p id="p1">拒绝信息搬运，专注知识内化</p>
+      <p id="p2">你的收藏夹，不该是知识的坟墓</p>
+      <p id="p3">把别人的经验，练成你的本能</p>
+    </div>
+
+    <div class="hero-actions" id="actions">
+      <button class="btn-primary" onclick="location.href='2.html'">立即免费体验</button>
+      <button class="btn-outline">了解学习流程 →</button>
+    </div>
+  </div>
+</section>
+
+<script>
+  /* ─────────────────────────────────────────────
+     1. CONTINUOUS FLOATING WORDS BACKGROUND
+     ───────────────────────────────────────────── */
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const WORDS = [
+    '记忆锚点', '费曼输出', '知识内化', '场景生成', '认知诊断',
+    '工作记忆', '沉没成本', '机会成本', '学习单元', '五维雷达',
+    '深度提炼', '沉浸陪练', '边界辨析', '逻辑迁移', '知识网络',
+    '碎片整合', '实战演练', '肌肉记忆', '虚假掌握', '纸上谈兵'
+  ];
+
+  class FloatingWord {
+    constructor() {
+      this.reset();
+      // Randomize initial life so they don't all spawn at once initially
+      this.life = Math.random() * this.maxLife;
+      this.fadeIn = false; // Skip fade-in on initial scatter
+    }
+
+    reset() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const side = Math.random() > 0.5 ? 'left' : 'right';
+
+      if (side === 'left') {
+        this.x = Math.random() * w * 0.3;
+      } else {
+        this.x = w * 0.7 + Math.random() * w * 0.3;
+      }
+
+      this.y = Math.random() * h;
+      this.word = WORDS[Math.floor(Math.random() * WORDS.length)];
+
+      // Increased size & higher alpha based on user feedback
+      this.size = 18 + Math.random() * 22;
+      this.alpha = 0.08 + Math.random() * 0.12;
+
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.3;
+      this.rotation = (Math.random() - 0.5) * 0.2;
+      this.rotationSpeed = (Math.random() - 0.5) * 0.0015;
+
+      this.life = 0;
+      this.maxLife = 300 + Math.random() * 400;
+      this.fadeIn = true;
+    }
+
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.rotation += this.rotationSpeed;
+      this.life++;
+
+      // Fade in and out logic
+      if (this.fadeIn && this.life < 80) {
+        this.currentAlpha = (this.life / 80) * this.alpha;
+      } else if (this.life > this.maxLife - 80) {
+        this.currentAlpha = ((this.maxLife - this.life) / 80) * this.alpha;
+      } else {
+        this.currentAlpha = this.alpha;
+        this.fadeIn = false;
+      }
+
+      if (this.life >= this.maxLife || this.x < -150 || this.x > canvas.width + 150) {
+        this.reset();
+      }
+    }
+
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rotation);
+      ctx.font = `600 ${this.size}px 'Noto Serif SC', serif`;
+      ctx.fillStyle = `rgba(184, 115, 51, ${this.currentAlpha})`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.word, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  let particles = [];
+  // Increased particle count for more density
+  const PARTICLE_COUNT = 45;
+
+  function initCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new FloatingWord());
+    }
+  }
+
+  let animationId;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.update();
+      p.draw();
+    });
+    animationId = requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  initCanvas();
+  animate();
+
+  /* ─────────────────────────────────────────────
+     2. CONTENT REVEAL
+     ───────────────────────────────────────────── */
+  window.onload = () => {
+    document.querySelector('.hero-title').classList.add('visible');
+    setTimeout(() => document.getElementById('p1').classList.add('visible'), 300);
+    setTimeout(() => document.getElementById('p2').classList.add('visible'), 500);
+    setTimeout(() => document.getElementById('p3').classList.add('visible'), 700);
+    setTimeout(() => document.getElementById('actions').classList.add('visible'), 1100);
+  };
+
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 20);
+  });
+</script>
+
+</body>
+</html>
